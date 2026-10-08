@@ -10,7 +10,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
       <form method="post" action="/api/login">
         {error && (
           <div className="banner-error" role="alert">
-            Wrong name or password.
+            {error === "rate" ? "Too many failed attempts. Wait ten minutes and try again." : "Wrong name or password."}
           </div>
         )}
         <div className="field">

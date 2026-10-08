@@ -46,7 +46,7 @@ func newEnv(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	spec, _ := os.ReadFile("../../api/openapi.yaml")
-	srv := api.New(db, a, slog.New(slog.NewTextHandler(io.Discard, nil)), spec)
+	srv := api.New(db, a, slog.New(slog.NewTextHandler(io.Discard, nil)), spec, api.WithLimits(api.Limits{})) // limits are tested on their own
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)
 	return &env{t: t, db: db, store: inventory.NewStore(db), ts: ts, w: wmstest.Seed(t, db, 3)}

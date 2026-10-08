@@ -181,6 +181,12 @@ What the numbers do not show:
 
 [A cycle count cannot be compared to a number that keeps moving](docs/writeup-counting-under-load.md): how counts are classified as timing or loss while pickers work, and the PostgreSQL snapshot detail that makes it exact.
 
+## Security and hardening (Phase 7)
+
+Tier T2 (internal team, synthetic data). The control list, how each was checked, what the audit fixed and what is still open are in [docs/security.md](docs/security.md). Short version: rate limits, sign-in throttle, CSP and other headers, log redaction, a lint test against string-built SQL, dependency scans (clean after a Go patch bump), and sessions that end when a user is removed are done and tested. **The sign-in is still a stand-in** (users and passwords in an environment variable), two-factor and billing caps are yours to set, and I could not test the service worker under the new CSP.
+
+When load testing, start the API with `CROSSDOCK_RATE_LIMIT_USER=0` or the load generator, which acts as one user, will be limited.
+
 ## Tests
 
 ```bash

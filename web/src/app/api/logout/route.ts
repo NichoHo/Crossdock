@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { endSession } from "@/lib/session";
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   await endSession();
-  return NextResponse.redirect(new URL("/login", req.url), 303);
+  return new NextResponse(null, { status: 303, headers: { Location: "/login" } });
 }

@@ -1,6 +1,6 @@
 module github.com/nicholasgasior/crossdock
 
-go 1.26.5
+go 1.26.6
 
 require (
 	github.com/golang-migrate/migrate/v4 v4.20.1

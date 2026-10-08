@@ -175,6 +175,7 @@ func (w *Worker) RunOnce(ctx context.Context) (bool, error) {
 
 func (w *Worker) lease(ctx context.Context, now time.Time) (*leased, error) {
 	var l leased
+	// sqlok: eligible() inserts only a placeholder name
 	err := w.db.QueryRowContext(ctx, `
 		UPDATE endpoints SET lease_until = $2,
 		       breaker = CASE WHEN breaker = 'open' THEN 'half_open' ELSE breaker END
@@ -207,6 +208,7 @@ type due struct {
 }
 
 func (w *Worker) due(ctx context.Context, ep *leased, now time.Time, limit int) ([]due, error) {
+	// sqlok: eligible() inserts only a placeholder name
 	rows, err := w.db.QueryContext(ctx, `
 		SELECT d.id, d.event_id, d.attempts, d.replay_of, ev.topic, ev.key, ev.payload, ev.occurred_at, ev.traceparent, ev.warehouse_id
 		FROM deliveries d JOIN events ev ON ev.id = d.event_id

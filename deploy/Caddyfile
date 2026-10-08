@@ -1,5 +1,6 @@
 # TLS comes from Caddy: a public host name gets a Let's Encrypt certificate, and
 # SITE_ADDRESS=localhost gets Caddy's own local CA for trying this on a laptop.
+# Plain HTTP on port 80 redirects to HTTPS by default.
 {$SITE_ADDRESS} {
 	encode zstd gzip
 
@@ -7,6 +8,11 @@
 		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options nosniff
 		Referrer-Policy same-origin
+		X-Frame-Options DENY
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		# Next.js writes small inline scripts and styles, so script-src and style-src allow
+		# 'unsafe-inline'. A per-request nonce would remove that; see docs/security.md.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 		-Server
 	}
 
@@ -19,11 +25,17 @@
 		reverse_proxy api:8080
 	}
 
+	# Grafana signs people in itself. Anonymous viewing is off unless GRAFANA_ANONYMOUS=true.
 	handle_path /grafana/* {
 		reverse_proxy grafana:3000
 	}
 
+	# Traces can carry order and tracking numbers, so the viewer needs a password.
+	# Make the hash with:  docker run --rm caddy:2.9-alpine caddy hash-password
 	handle /jaeger* {
+		basic_auth {
+			{$JAEGER_USER} {$JAEGER_PASSWORD_HASH}
+		}
 		reverse_proxy jaeger:16686
 	}
 

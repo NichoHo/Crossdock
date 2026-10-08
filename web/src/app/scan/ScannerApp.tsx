@@ -1,5 +1,6 @@
 "use client";
 
+import { SignOutButton } from "@/components/SignOutButton";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WifiHigh, WifiSlash, ArrowsClockwise, CheckCircle, WarningOctagon } from "@phosphor-icons/react";
 import {
@@ -159,6 +160,7 @@ export function ScannerApp({ wid, user }: { wid: string; user: string; role: str
           <header className="scan-head">
             <span className="label">Signed in as {user}</span>
             <span className="code">Tasks</span>
+            <SignOutButton />
           </header>
           <div className="scan-body">
             {authLost && <div className="banner-error" role="alert">Session ended. <a href="/login">Sign in again</a>. Queued work is kept.</div>}

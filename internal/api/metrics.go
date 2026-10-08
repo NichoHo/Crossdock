@@ -78,6 +78,7 @@ func (m *metrics) write(sb *strings.Builder) {
 // gauge runs a query returning (label, value) rows and writes one series per row.
 func (s *Server) gauge(ctx context.Context, sb *strings.Builder, name, help, typ, label, query string) {
 	fmt.Fprintf(sb, "# HELP %s %s\n# TYPE %s %s\n", name, help, name, typ)
+	// sqlok: callers pass constant queries; the argument only forwards one
 	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
 		s.log.Error("metrics query", "metric", name, "err", err)

@@ -1,3 +1,4 @@
+import { SignOutButton } from "@/components/SignOutButton";
 import { ConsoleNav } from "@/components/ConsoleNav";
 import { requireCtx } from "@/lib/context";
 import { selectWarehouse } from "../actions";
@@ -20,9 +21,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
         </form>
         <span className="spacer" />
         <span className="muted">{session.user} ({session.role})</span>
-        <form action="/api/logout" method="post">
-          <button className="btn secondary small" type="submit">Sign out</button>
-        </form>
+        <SignOutButton />
       </header>
       <main className="main" id="main">
         {wid ? children : <div className="empty">No warehouse exists yet. Run `crossdock generate` to create one.</div>}

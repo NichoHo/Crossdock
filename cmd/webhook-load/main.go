@@ -105,6 +105,7 @@ func run(nEvents, nShipments int, seed uint64, sla, timeout time.Duration, outPa
 			bg := context.Background()
 			for _, q := range []string{`DELETE FROM events WHERE warehouse_id=$1`, `DELETE FROM endpoints WHERE warehouse_id=$1`,
 				`DELETE FROM outbox WHERE warehouse_id=$1`, `DELETE FROM warehouses WHERE id=$1`} {
+				// sqlok: each q is a constant from the list above
 				_, _ = db.ExecContext(bg, q, wid)
 			}
 		}()

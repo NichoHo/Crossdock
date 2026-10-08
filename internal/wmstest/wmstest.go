@@ -42,6 +42,7 @@ func Seed(t testing.TB, db *sql.DB, nSKU int) World {
 	}
 	exec := func(q string, args ...any) {
 		t.Helper()
+		// sqlok: test helper; every call passes a constant
 		if _, err := db.ExecContext(ctx, q, args...); err != nil {
 			t.Fatalf("seed: %v\n%s", err, q)
 		}

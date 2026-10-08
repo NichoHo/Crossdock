@@ -365,6 +365,7 @@ func (s *Service) sums(ctx context.Context, tx *sql.Tx, wid inventory.WarehouseI
 		q += ` AND pg_visible_in_snapshot(xid, $3::pg_snapshot)`
 		args = append(args, snapshot)
 	}
+	// sqlok: fixed fragments only; snapshot and ids are parameters
 	rows, err := tx.QueryContext(ctx, q+` GROUP BY sku_id, lot_id, lpn_id`, args...)
 	if err != nil {
 		return nil, err

@@ -5,7 +5,10 @@ package telemetry
 
 import (
 	"context"
+	"log/slog"
 	"os"
+	"regexp"
+	"strings"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -69,4 +72,21 @@ func Inject(ctx context.Context, set func(k, v string)) {
 // Extract returns ctx with the trace context found in the given header getter.
 func Extract(ctx context.Context, get func(k string) string) context.Context {
 	return prop.Extract(ctx, propagation.MapCarrier{"traceparent": get("traceparent"), "tracestate": get("tracestate")})
+}
+
+var secretKey = regexp.MustCompile(`(?i)(token|secret|password|passwd|authorization|cookie|signature|api[_-]?key|credential)`)
+
+// RedactAttr is a slog ReplaceAttr that hides the value of any attribute whose name
+// suggests a secret, and any value that looks like an API token (spec 17). Scanned
+// codes and notes are not secrets; they stay visible as fields.
+func RedactAttr(_ []string, a slog.Attr) slog.Attr {
+	if secretKey.MatchString(a.Key) && a.Value.Kind() != slog.KindGroup {
+		return slog.String(a.Key, "[redacted]")
+	}
+	if a.Value.Kind() == slog.KindString {
+		if v := a.Value.String(); strings.Contains(v, "cdk_") {
+			return slog.String(a.Key, strings.ReplaceAll(v, "cdk_", "cdk_[redacted]_"))
+		}
+	}
+	return a
 }

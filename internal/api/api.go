@@ -5,6 +5,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
@@ -39,6 +40,8 @@ const maxBody = 1 << 20 // 1 MiB
 // Server wires the domain services to HTTP.
 type Server struct {
 	metrics metrics
+	limits  Limits
+	limiter limiter
 	db      *sql.DB
 	store   *inventory.Store
 	inbound *inbound.Service
@@ -64,7 +67,7 @@ func WithDelivery(d *delivery.Service) Option { return func(s *Server) { s.deliv
 // New builds a Server. spec may be nil.
 func New(db *sql.DB, a *auth.Authenticator, log *slog.Logger, spec []byte, opts ...Option) *Server {
 	store := inventory.NewStore(db)
-	s := &Server{db: db, store: store, inbound: inbound.NewService(db, store),
+	s := &Server{limits: DefaultLimits(), db: db, store: store, inbound: inbound.NewService(db, store),
 		out: outbound.NewService(db, store), auth: a, log: log, spec: spec,
 		counting: counting.NewService(db, store), reconcile: reconcile.NewService(db),
 		returns: returns.NewService(db, store), settlement: settlement.NewService(db),
@@ -133,6 +136,7 @@ func (s *Server) wrap(rt Route) http.HandlerFunc {
 			limit = rt.MaxBody
 		}
 		r.Body = http.MaxBytesReader(w, r.Body, limit)
+		w.Header().Set("Cache-Control", "no-store") // answers depend on who asks; never let a cache keep them
 		rec := &recorder{ResponseWriter: w, status: 200}
 		defer func() { s.metrics.observe(rt.Method+" "+rt.Pattern, rec.status, time.Since(start)) }()
 
@@ -141,12 +145,26 @@ func (s *Server) wrap(rt Route) http.HandlerFunc {
 		ctx, span := telemetry.Tracer().Start(telemetry.Extract(r.Context(), r.Header.Get), rt.Method+" "+rt.Pattern,
 			trace.WithSpanKind(trace.SpanKindServer))
 		defer func() { span.SetAttributes(attribute.Int("http.status_code", rec.status)); span.End() }()
+		if !span.SpanContext().HasTraceID() { // telemetry off: still give the request an id
+			var b [16]byte
+			_, _ = rand.Read(b[:])
+			ctx = context.WithValue(ctx, ctxKey{}, hex.EncodeToString(b[:]))
+		}
 		r = r.WithContext(ctx)
 
 		p, err := s.auth.Authenticate(r)
 		if err != nil {
 			s.problem(rec, r, &httpErr{http.StatusUnauthorized, "unauthenticated", err.Error()})
 			s.logReq(r, rec, "", start)
+			return
+		}
+		rate := s.limits.User
+		if p.System != "" {
+			rate = s.limits.System
+		}
+		if ok, wait := s.limiter.allow(p.ID(), rate, time.Now()); !ok {
+			s.problem(rec, r, tooMany(rec, wait))
+			s.logReq(r, rec, p.ID(), start)
 			return
 		}
 		if !allowed(rt, p) {
@@ -173,7 +191,7 @@ func allowed(rt Route, p auth.Principal) bool {
 func (s *Server) logReq(r *http.Request, rec *recorder, who string, start time.Time) {
 	// Caller-supplied values go in fields, never in the message.
 	s.log.Info("request", "method", r.Method, "path", r.URL.Path, "status", rec.status,
-		"principal", who, "ms", time.Since(start).Milliseconds())
+		"principal", who, "ms", time.Since(start).Milliseconds(), "trace_id", traceID(r))
 }
 
 // withIdempotency replays the stored response for a repeated Idempotency-Key,
@@ -253,14 +271,14 @@ func (e *httpErr) Error() string { return e.title + ": " + e.detail }
 func (s *Server) problem(w http.ResponseWriter, r *http.Request, err error) {
 	he := toHTTPErr(err)
 	if he.status >= 500 {
-		s.log.Error("request failed", "path", r.URL.Path, "err", err)
+		s.log.Error("request failed", "path", r.URL.Path, "err", err, "trace_id", traceID(r))
 		he = &httpErr{he.status, "internal error", "something went wrong; the request can be retried"}
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(he.status)
-	_ = json.NewEncoder(w).Encode(map[string]any{
-		"type": "about:blank", "title": he.title, "status": he.status, "detail": he.detail,
-	})
+	body := map[string]any{"type": "about:blank", "title": he.title, "status": he.status, "detail": he.detail}
+	body["trace_id"] = traceID(r) // quote this to find the full detail in the logs
+	_ = json.NewEncoder(w).Encode(body)
 }
 
 // extraErrors lets a domain file map its own errors to status codes.
@@ -324,4 +342,15 @@ func decodeCursor(c string, n int) ([]string, error) {
 		return nil, &httpErr{http.StatusBadRequest, "bad cursor", "the cursor is not valid"}
 	}
 	return parts, nil
+}
+
+// traceID is the request's trace id, or the random id wrap made when tracing is off.
+func traceID(r *http.Request) string {
+	if sc := trace.SpanContextFromContext(r.Context()); sc.HasTraceID() {
+		return sc.TraceID().String()
+	}
+	if v, ok := r.Context().Value(ctxKey{}).(string); ok {
+		return v
+	}
+	return ""
 }

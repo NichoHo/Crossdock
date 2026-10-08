@@ -6,7 +6,8 @@
 //	go test -tags load -count=1 -timeout 30m -v ./loadtest
 //
 // Each scenario seeds its own warehouse, then checks the invariants (conservation,
-// projection fidelity, task coupling) after the load stops. Results go to
+// projection fidelity, task coupling) after the load stops. Start the API with
+// CROSSDOCK_RATE_LIMIT_USER=0: the generator acts as one user and would hit the rate limit. Results go to
 // loadtest/results/. Scale knobs: LOAD_OPERATORS, LOAD_SECONDS.
 // The webhook fan-out scenario is cmd/webhook-load; count under load is
 // internal/counting/load_test.go (see the README for why they are separate).

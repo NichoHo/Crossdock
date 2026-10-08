@@ -78,6 +78,12 @@ export async function dismiss(key: string): Promise<void> {
   await tx(QUEUE, "readwrite", (s) => s.delete(key));
 }
 
+/** Wipes the queue and the cached lists. Called on sign-out so the next person on a shared handset starts clean. */
+export async function clearAll(): Promise<void> {
+  await tx(QUEUE, "readwrite", (s) => s.clear());
+  await tx(KV, "readwrite", (s) => s.clear());
+}
+
 export async function kvGet<T>(k: string): Promise<T | undefined> {
   return tx<T | undefined>(KV, "readonly", (s) => s.get(k));
 }

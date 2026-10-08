@@ -40,6 +40,9 @@ type config struct {
 	AllowPrivateWH  bool
 	DeliveryWorkers int
 
+	// Limits are requests per second per principal; 0 turns a limit off.
+	Limits api.Limits
+
 	// BackgroundEvery is how often counts are scheduled and inbound receipts reconciled.
 	BackgroundEvery time.Duration
 }
@@ -54,6 +57,7 @@ func loadConfig() (config, error) {
 		EncryptionKey:   os.Getenv("CROSSDOCK_SECRET_ENCRYPTION_KEY"),
 		AllowPrivateWH:  os.Getenv("CROSSDOCK_WEBHOOK_ALLOW_PRIVATE") == "true",
 		DeliveryWorkers: 16,
+		Limits:          api.DefaultLimits(),
 		BackgroundEvery: time.Minute,
 	}
 	for _, b := range strings.Split(os.Getenv("CROSSDOCK_BROKERS"), ",") {
@@ -96,6 +100,20 @@ func loadConfig() (config, error) {
 		}
 		c.BackgroundEvery = d
 	}
+	rate := func(name string, r *api.RateLimit) {
+		v := os.Getenv(name)
+		if v == "" {
+			return
+		}
+		n, err := strconv.ParseFloat(v, 64)
+		if err != nil || n < 0 {
+			problems = append(problems, name+" must be a number of requests per second, 0 or more (0 turns the limit off)")
+			return
+		}
+		r.PerSecond, r.Burst = n, int(n*2)+1
+	}
+	rate("CROSSDOCK_RATE_LIMIT_USER", &c.Limits.User)
+	rate("CROSSDOCK_RATE_LIMIT_SYSTEM", &c.Limits.System)
 	if len(problems) > 0 {
 		return c, errors.New("invalid configuration:\n  - " + strings.Join(problems, "\n  - "))
 	}
@@ -107,7 +125,7 @@ func cmdServe() error {
 	if err != nil {
 		return err
 	}
-	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{ReplaceAttr: telemetry.RedactAttr}))
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -161,7 +179,7 @@ func cmdServe() error {
 	go background(ctx, db, log, cfg.BackgroundEvery)
 
 	srv := &http.Server{
-		Addr: cfg.Listen, Handler: api.New(db, a, log, apispec.Spec, opts...).Handler(),
+		Addr: cfg.Listen, Handler: api.New(db, a, log, apispec.Spec, append(opts, api.WithLimits(cfg.Limits))...).Handler(),
 		ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 60 * time.Second,
 	}
 	errc := make(chan error, 1)

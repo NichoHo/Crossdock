@@ -195,6 +195,7 @@ func (s *Store) upsertPosition(ctx context.Context, tx *sql.Tx, k PositionKey, s
 		RETURNING %s`, col, col, col)
 
 	var result int64
+	// sqlok: column name comes from stateColumn, a fixed switch
 	err := tx.QueryRowContext(ctx, q,
 		string(k.WarehouseID), string(k.SKU), string(k.Lot),
 		string(k.Location), string(k.LPN), delta,
@@ -221,6 +222,7 @@ func (s *Store) upsertPositionVirtual(ctx context.Context, tx *sql.Tx, k Positio
 		VALUES ($1, $2, $3, $4, $5, $6, NOW())
 		ON CONFLICT (warehouse_id, sku_id, lot_id, location, lpn_id)
 		DO UPDATE SET %s = positions.%s + $6, updated_at = NOW()`, col, col, col)
+	// sqlok: column name comes from stateColumn, a fixed switch
 	_, err := tx.ExecContext(ctx, q,
 		string(k.WarehouseID), string(k.SKU), string(k.Lot),
 		string(k.Location), string(k.LPN), delta,
@@ -298,6 +300,7 @@ func (s *Store) ListMovements(ctx context.Context, warehouseID WarehouseID, afte
 		q += fmt.Sprintf(" LIMIT %d", limit)
 	}
 
+	// sqlok: limit is an int formatted with %d
 	rows, err := s.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("inventory: list movements: %w", err)

@@ -191,6 +191,7 @@ func (s *Service) Ageing(ctx context.Context, wid inventory.WarehouseID) (Ageing
 // are code constants, never user input.
 func AgeingFor(ctx context.Context, db *sql.DB, table, where string, wid inventory.WarehouseID, now time.Time) (Ageing, error) {
 	var a Ageing
+	// sqlok: table and where are constants at every call site; values are parameters
 	err := db.QueryRowContext(ctx, `
 		SELECT count(*) FILTER (WHERE opened_at >  $2::timestamptz - interval '7 days'),
 		       count(*) FILTER (WHERE opened_at <= $2::timestamptz - interval '7 days'  AND opened_at > $2::timestamptz - interval '30 days'),

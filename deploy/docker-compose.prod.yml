@@ -17,6 +17,8 @@ services:
       - "${HTTPS_PORT:-443}:443"
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS to the public host name}
+      JAEGER_USER: ${JAEGER_USER:?}
+      JAEGER_PASSWORD_HASH: ${JAEGER_PASSWORD_HASH:?}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -55,6 +57,8 @@ services:
       CROSSDOCK_IDENTITY_SIGNING_KEY: ${CROSSDOCK_IDENTITY_SIGNING_KEY:?}
       CROSSDOCK_SECRET_ENCRYPTION_KEY: ${CROSSDOCK_SECRET_ENCRYPTION_KEY:?}
       CROSSDOCK_BROKERS: redpanda:9092
+      CROSSDOCK_RATE_LIMIT_USER: ${RATE_LIMIT_USER:-50}
+      CROSSDOCK_RATE_LIMIT_SYSTEM: ${RATE_LIMIT_SYSTEM:-10}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
     depends_on:
       migrate: { condition: service_completed_successfully }
@@ -127,7 +131,7 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?}
       GF_SERVER_ROOT_URL: https://${SITE_ADDRESS}/grafana/
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
-      GF_AUTH_ANONYMOUS_ENABLED: "true"      # the board is the public face of the demo
+      GF_AUTH_ANONYMOUS_ENABLED: ${GRAFANA_ANONYMOUS:-false}   # true makes the board public read-only; fine for synthetic data only
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro

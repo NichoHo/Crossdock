@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/nicholasgasior/crossdock/internal/synth"
+	"github.com/nicholasgasior/crossdock/internal/telemetry"
 )
 
 // crossdock synthetic -warehouse W [-operators 4] [-every 20s]
@@ -30,7 +31,7 @@ func cmdSynthetic(args []string) error {
 	if base == "" {
 		base = "http://127.0.0.1:8080"
 	}
-	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{ReplaceAttr: telemetry.RedactAttr}))
 	sh := &synth.Shift{C: synth.New(base, requireEnv("CROSSDOCK_SERVICE_TOKEN"), requireEnv("CROSSDOCK_IDENTITY_SIGNING_KEY"), *wid),
 		Operators: *ops, Every: *every, Seed: uint64(time.Now().UnixNano()), Log: log}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

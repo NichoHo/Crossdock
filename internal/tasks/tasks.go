@@ -209,6 +209,7 @@ func Claim(ctx context.Context, db *sql.DB, wid inventory.WarehouseID, operator 
 	if len(ks) == 1 {
 		kindCond = `kind = ($3::text[])[1]`
 	}
+	// sqlok: kindCond is one of two fixed fragments
 	row := db.QueryRowContext(ctx, `
 		UPDATE tasks SET state='assigned', assigned_to=$2, updated_at=NOW()
 		WHERE (warehouse_id, id) = (
@@ -261,6 +262,7 @@ func List(ctx context.Context, q Querier, wid inventory.WarehouseID, f Filter, a
 	}
 	args = append(args, limit)
 	sqlq += fmt.Sprintf(" ORDER BY created_at, id LIMIT $%d", len(args))
+	// sqlok: fixed conditions with numbered placeholders; values are parameters
 	rows, err := q.QueryContext(ctx, sqlq, args...)
 	if err != nil {
 		return nil, err

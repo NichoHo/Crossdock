@@ -34,7 +34,13 @@ export function decodeSession(token: string | undefined, secret: string, now = D
 
 export async function getSession(): Promise<Session | null> {
   const jar = await cookies();
-  return decodeSession(jar.get(SESSION_COOKIE)?.value, config().sessionSecret);
+  const c = config();
+  const s = decodeSession(jar.get(SESSION_COOKIE)?.value, c.sessionSecret);
+  if (!s) return null;
+  // The cookie proves who signed in, not that they still may. Check the current user list on
+  // every request, so removing a user or changing a role takes effect at once.
+  const u = c.users.find((x) => x.name === s.user);
+  return u ? { ...s, role: u.role } : null;
 }
 
 export async function startSession(user: string, role: Role) {
