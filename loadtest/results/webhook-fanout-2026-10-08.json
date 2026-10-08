@@ -1,0 +1,24 @@
+{
+  "bus_startup_seconds": 0.1606572,
+  "date": "2026-10-08T05:50:05Z",
+  "dead_letters": 100,
+  "deliveries": 10000,
+  "deliveries_per_second": 402.938936675253,
+  "endpoints": 100,
+  "events": 100,
+  "failures": null,
+  "flaky_done_seconds": 8.3576343,
+  "healthy_done_seconds": 8.141489,
+  "host": {
+    "cpus": 16,
+    "go": "go1.26.5",
+    "os": "windows"
+  },
+  "http_failures": 1622,
+  "http_requests": 11522,
+  "passed": true,
+  "scenario": "webhook fan-out",
+  "seed": 1,
+  "shipments": 25,
+  "total_seconds": 24.817656200000002
+}

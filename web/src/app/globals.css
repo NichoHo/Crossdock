@@ -1,0 +1,173 @@
+/* Crossdock design system (spec 12). Safety-signage palette used for status only. */
+:root {
+  --surface: #f4f5f2;
+  --surface-raised: #ffffff;
+  --ink: #141816;
+  --ink-muted: #4e5652;
+  --line: #c9cec9;
+  --action: #0b5c8e;
+  --on-action: #ffffff;
+  --ok: #1e6b3a;
+  --attention: #8a5a00;
+  --stop: #9b1c1c;
+  --hold: #5b3d8e;
+  --font-ui: var(--font-atkinson), system-ui, sans-serif;
+  --font-code: var(--font-jetbrains), ui-monospace, monospace;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #121514; --surface-raised: #1b1f1d; --ink: #eceeea; --ink-muted: #a9b0ac; --line: #333a36;
+    --action: #5fb0e6; --on-action: #0b1215; --ok: #5fc77f; --attention: #f2b233; --stop: #f07070; --hold: #b693e8;
+  }
+}
+:root[data-theme="dark"] {
+  --surface: #121514; --surface-raised: #1b1f1d; --ink: #eceeea; --ink-muted: #a9b0ac; --line: #333a36;
+  --action: #5fb0e6; --on-action: #0b1215; --ok: #5fc77f; --attention: #f2b233; --stop: #f07070; --hold: #b693e8;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--surface); }
+body {
+  margin: 0; background: var(--surface); color: var(--ink);
+  font: 400 15px/1.45 var(--font-ui);
+}
+a { color: var(--action); }
+:focus-visible { outline: 3px solid var(--action); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Codes: always mono, tabular, slashed zero. */
+.code, code, .num { font-family: var(--font-code); font-variant-numeric: tabular-nums slashed-zero; font-feature-settings: "zero" 1; }
+.code { font-size: 18px; font-weight: 700; letter-spacing: 0.01em; }
+.num { text-align: right; }
+.label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); font-weight: 700; }
+.muted { color: var(--ink-muted); }
+h1 { font-size: 20px; margin: 0 0 12px; }
+h2 { font-size: 15px; margin: 0 0 8px; }
+
+/* Console shell */
+.shell { display: grid; grid-template-columns: 208px 1fr; grid-template-rows: 56px 1fr; min-height: 100dvh; }
+.topbar { grid-column: 2; display: flex; align-items: center; gap: 16px; padding: 0 20px; border-bottom: 1px solid var(--line); background: var(--surface-raised); }
+.topbar .spacer { flex: 1; }
+.rail { grid-row: 1 / span 2; border-right: 1px solid var(--line); background: var(--surface-raised); padding: 16px 0; display: flex; flex-direction: column; }
+.rail .brand { font-weight: 700; padding: 0 20px 16px; font-size: 17px; }
+.rail a { display: flex; align-items: center; gap: 10px; padding: 12px 20px; min-height: 48px; color: var(--ink); text-decoration: none; border-left: 4px solid transparent; }
+.rail a[aria-current="page"] { border-left-color: var(--action); background: color-mix(in srgb, var(--action) 10%, transparent); font-weight: 700; }
+.rail a:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.main { grid-column: 2; padding: 20px; min-width: 0; }
+
+/* Dense tables */
+.table-wrap { overflow: auto; border: 1px solid var(--line); background: var(--surface-raised); max-height: calc(100dvh - 190px); }
+table { border-collapse: collapse; width: 100%; }
+th { position: sticky; top: 0; background: var(--surface-raised); text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--line); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); }
+td { padding: 8px 12px; vertical-align: middle; }
+tbody tr:nth-child(even) { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+th.num, td.num { text-align: right; }
+details > summary { cursor: pointer; min-height: 32px; }
+
+/* Controls */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 20px;
+  border: 2px solid var(--action); background: var(--action); color: var(--on-action);
+  font: 700 15px var(--font-ui); border-radius: 6px; cursor: pointer; text-decoration: none;
+}
+.btn.secondary { background: transparent; color: var(--action); }
+.btn.danger { border-color: var(--stop); background: transparent; color: var(--stop); }
+.btn.small { min-height: 36px; padding: 0 12px; font-size: 14px; }
+.btn:active { transform: translateY(1px); }
+.btn[disabled] { opacity: 0.55; cursor: not-allowed; }
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.field input, .field select, .filters input, .filters select {
+  min-height: 48px; padding: 0 12px; font: 400 16px var(--font-ui); color: var(--ink);
+  background: var(--surface-raised); border: 2px solid var(--ink-muted); border-radius: 6px;
+}
+.field input.code, .filters input.code { font-family: var(--font-code); }
+.field .error { color: var(--stop); font-weight: 700; }
+.filters { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 12px; flex-wrap: wrap; }
+.filters .field { margin-bottom: 0; }
+.panel { background: var(--surface-raised); border: 1px solid var(--line); padding: 16px; border-radius: 6px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; align-items: start; }
+.empty { padding: 32px; text-align: center; color: var(--ink-muted); border: 1px dashed var(--line); border-radius: 6px; }
+.banner-error { border: 2px solid var(--stop); color: var(--stop); padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; font-weight: 700; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* Status chip: shape + colour + label, never colour alone */
+.chip { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; white-space: nowrap; }
+.chip svg { flex: none; }
+.chip[data-tone="ok"] { color: var(--ok); } .chip[data-tone="attention"] { color: var(--attention); }
+.chip[data-tone="stop"] { color: var(--stop); } .chip[data-tone="hold"] { color: var(--hold); }
+.chip[data-tone="pending"] { color: var(--ink-muted); }
+
+/* Timeline */
+.timeline { list-style: none; margin: 0; padding: 0 0 0 12px; border-left: 2px solid var(--line); }
+.timeline li { padding: 0 0 16px 16px; position: relative; }
+.timeline li::before { content: ""; position: absolute; left: -19px; top: 6px; width: 10px; height: 10px; background: var(--action); border-radius: 50%; }
+.timeline time { font-family: var(--font-code); font-size: 13px; color: var(--ink-muted); }
+
+/* Login */
+.login { max-width: 360px; margin: 12vh auto; }
+
+@media (max-width: 800px) {
+  .shell { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+  .rail { grid-row: auto; flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 0; }
+  .rail .brand { display: none; }
+  .rail a { border-left: 0; border-bottom: 4px solid transparent; white-space: nowrap; }
+  .rail a[aria-current="page"] { border-bottom-color: var(--action); }
+  .topbar, .main { grid-column: 1; }
+}
+
+/* Scan result flash: whole screen edge for 200ms; off under reduced motion (sound and haptic remain). */
+html[data-flash]::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 100; border: 10px solid transparent; }
+html[data-flash="ok"]::after { border-color: var(--ok); }
+html[data-flash="error"]::after { border-color: var(--stop); }
+@media (prefers-reduced-motion: reduce) { html[data-flash]::after { display: none; } }
+
+/* Scanner: one task per screen, primary action pinned to the bottom, nothing under 14px. */
+.scan { display: flex; flex-direction: column; min-height: 100dvh; font-size: 18px; }
+.scan-head { padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface-raised); }
+.scan-head .code { font-size: 28px; display: block; }
+.scan-body { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.scan-bar { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 16px; border-top: 2px solid var(--line); background: var(--surface-raised); font-size: 14px; font-weight: 700; }
+.scan-actions { display: flex; gap: 12px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--surface-raised); align-items: center; }
+.scan-actions .btn.primary { flex: 1; min-height: 56px; font-size: 18px; }
+.scan-actions .btn.text { background: none; border: 0; color: var(--stop); min-height: 56px; padding: 0 12px; font: 700 16px var(--font-ui); }
+.scan-input { width: 100%; min-height: 56px; font: 700 24px var(--font-code); padding: 0 12px; border: 3px solid var(--action); border-radius: 6px; background: var(--surface-raised); color: var(--ink); }
+.scan-target { font: 700 28px var(--font-code); }
+.scan-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.scan-list button { width: 100%; text-align: left; min-height: 64px; padding: 8px 14px; background: var(--surface-raised); color: var(--ink); border: 2px solid var(--line); border-radius: 6px; font: 400 16px var(--font-ui); cursor: pointer; }
+.scan-last { min-height: 28px; font: 700 16px var(--font-code); }
+.scan-last[data-ok="true"] { color: var(--ok); } .scan-last[data-ok="false"] { color: var(--stop); }
+.stepper { display: flex; align-items: center; gap: 12px; }
+.stepper button { width: 56px; height: 56px; font: 700 28px var(--font-ui); border: 2px solid var(--action); background: transparent; color: var(--action); border-radius: 6px; }
+.stepper input { width: 120px; text-align: center; min-height: 56px; font: 700 40px var(--font-code); border: 2px solid var(--ink-muted); border-radius: 6px; background: var(--surface-raised); color: var(--ink); }
+.step { display: flex; gap: 10px; align-items: center; padding: 8px 0; font-size: 18px; }
+
+/* Interaction polish (Web Interface Guidelines pass) */
+a, button, input, select, summary, label { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+h1, h2 { text-wrap: balance; }
+.btn:hover:not([disabled]) { filter: brightness(1.12); }
+.btn.secondary:hover:not([disabled]), .btn.danger:hover:not([disabled]) { background: color-mix(in srgb, currentColor 10%, transparent); filter: none; }
+.skip { position: absolute; left: 8px; top: -60px; z-index: 110; background: var(--action); color: var(--on-action); padding: 12px 16px; border-radius: 6px; }
+.skip:focus { top: 8px; }
+.main, .scan-body { scroll-margin-top: 64px; }
+
+/* Ageing bar (spec 12.5): four segments. Colour plus a pattern and a number, never colour alone. */
+.ageing { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-bottom: 16px; }
+.ageing > div { padding: 10px 12px; border: 2px solid currentColor; border-radius: 6px; background: var(--surface-raised); }
+.ageing .n { font: 700 28px var(--font-code); display: block; }
+.ageing .b0 { color: var(--ok); } .ageing .b1 { color: var(--attention); }
+.ageing .b2 { color: var(--attention); background-image: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, currentColor 18%, transparent) 8px 10px); }
+.ageing .b3 { color: var(--stop); border-width: 4px; }
+.ageing .lbl { color: var(--ink); font-size: 13px; font-weight: 700; }
+@media (max-width: 640px) { .ageing { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+table form .row input, table form .row select { min-height: 36px; padding: 0 8px; border: 2px solid var(--ink-muted); border-radius: 6px; background: var(--surface-raised); color: var(--ink); font: inherit; }
+
+/* Floor map (spec 12.5): heat is lightness steps of the action colour, plus the pick count printed in the cell and a dashed edge for bulk. */
+.heat { fill: var(--surface-raised); stroke: var(--line); stroke-width: 1.5; }
+.heat.h1 { fill: color-mix(in srgb, var(--action) 18%, var(--surface-raised)); stroke: var(--action); }
+.heat.h2 { fill: color-mix(in srgb, var(--action) 40%, var(--surface-raised)); stroke: var(--action); }
+.heat.h3 { fill: color-mix(in srgb, var(--action) 68%, var(--surface-raised)); stroke: var(--action); }
+.heat.h4 { fill: var(--action); stroke: var(--ink); }
+.map-label { font: 700 12px var(--font-code); fill: var(--ink-muted); }
+.map-n { font: 700 12px var(--font-code); fill: var(--ink); }
+.map-n.on-dark { fill: var(--on-action); }

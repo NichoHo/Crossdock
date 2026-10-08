@@ -1,0 +1,33 @@
+# TLS comes from Caddy: a public host name gets a Let's Encrypt certificate, and
+# SITE_ADDRESS=localhost gets Caddy's own local CA for trying this on a laptop.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		-Server
+	}
+
+	# /metrics stays inside the Compose network.
+	@metrics path /metrics /metrics/*
+	respond @metrics 404
+
+	# External systems call the API with their own tokens.
+	handle /v1/* {
+		reverse_proxy api:8080
+	}
+
+	handle_path /grafana/* {
+		reverse_proxy grafana:3000
+	}
+
+	handle /jaeger* {
+		reverse_proxy jaeger:16686
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

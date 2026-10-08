@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Go ${{ matrix.go-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        go-version: ["1.26"]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: crossdock_test
+          POSTGRES_USER: crossdock
+          POSTGRES_PASSWORD: crossdock
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
+    env:
+      CROSSDOCK_TEST_DB_URL: postgres://crossdock:crossdock@localhost:5432/crossdock_test?sslmode=disable
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Slotting job unit tests
+        run: |
+          pip install -r cmd/slotting/requirements.txt
+          cd cmd/slotting && python -m unittest test_slotting
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: Run tests (with race detector)
+        run: go test -race -count=1 -timeout 300s ./...
+
+      - name: Run invariants
+        run: go test -race -run 'TestInvariant|TestAllocationReservationBound|TestCancelReleasesExactlyOnce|TestTrace|TestCountUnderLoad|TestRealLossIsNotHidden|TestEveryBreakTypeIsGeneratedAndCaught|TestRejectedParcelLoopShowsInOneTimeline' ./internal/... -v -timeout 300s
+
+  # Final gate: invariants 1, 2, 3, 6 must pass.
+  # This is a separate job to make the exit criteria visible in the CI dashboard.
+  invariants-gate:
+    name: Invariants gate (1, 2, 3, 6)
+    runs-on: ubuntu-latest
+    needs: test
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: crossdock_gate
+          POSTGRES_USER: crossdock
+          POSTGRES_PASSWORD: crossdock
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
+    env:
+      CROSSDOCK_TEST_DB_URL: postgres://crossdock:crossdock@localhost:5432/crossdock_gate?sslmode=disable
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: true
+      - run: go mod download
+
+      - name: "GATE: Invariant 1 – Conservation"
+        run: go test -race -run TestInvariant1_Conservation ./internal/inventory/... -v
+
+      - name: "GATE: Invariant 2 – Position Identity"
+        run: go test -race -run TestInvariant2_PositionIdentity ./internal/inventory/... -v
+
+      - name: "GATE: Invariant 3 – Projection Fidelity"
+        run: go test -race -run TestInvariant3_ProjectionFidelity ./internal/inventory/... -v
+
+      - name: "GATE: Invariant 6 – Movement Immutability"
+        run: go test -race -run TestInvariant6_MovementImmutability ./internal/inventory/... -v
+
+      - name: "GATE: Invariants 4, 5, 7 through the real workflows"
+        run: go test -race -run 'TestAllocationReservationBound|TestCancelReleasesExactlyOnce|TestInvariant7' ./internal/outbound/... -v
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: true
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout 3m

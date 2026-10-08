@@ -1,0 +1,637 @@
+openapi: 3.1.0
+info:
+  title: Crossdock API
+  version: 1.0.0
+  description: |
+    Warehouse and fulfilment API. Every mutating call accepts an `Idempotency-Key`
+    header; `POST /receipts` requires it. List endpoints are cursor paginated
+    (`cursor`, `limit`, response `next_cursor`). Errors are RFC 9457 problem details.
+
+    Callers authenticate with `Authorization: Bearer <token>`. The web tier sends
+    its service token plus `X-Crossdock-Identity` and `X-Crossdock-Signature`.
+    External systems send a `cdk_` API token limited to its scopes.
+servers:
+  - url: /
+security:
+  - bearer: []
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+  parameters:
+    wid: { name: wid, in: path, required: true, schema: { type: string } }
+    id: { name: id, in: path, required: true, schema: { type: string } }
+    cursor: { name: cursor, in: query, schema: { type: string } }
+    limit: { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+    idem: { name: Idempotency-Key, in: header, schema: { type: string } }
+  responses:
+    Problem:
+      description: Problem details
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+    ASNLine:
+      type: object
+      required: [sku, expected_qty]
+      properties:
+        id: { type: string }
+        sku: { type: string }
+        lot: { type: string }
+        expected_qty: { type: integer, minimum: 1 }
+        received_qty: { type: integer }
+        short: { type: boolean }
+    ASN:
+      type: object
+      required: [id, ref, state, lines]
+      properties:
+        id: { type: string }
+        ref: { type: string }
+        supplier: { type: string }
+        state: { type: string, enum: [open, received] }
+        lines: { type: array, items: { $ref: "#/components/schemas/ASNLine" } }
+    OrderLine:
+      type: object
+      required: [sku, qty]
+      properties:
+        id: { type: string }
+        sku: { type: string }
+        qty: { type: integer, minimum: 1 }
+        allocated_qty: { type: integer }
+    Order:
+      type: object
+      required: [id, ref, state]
+      properties:
+        id: { type: string }
+        ref: { type: string }
+        state:
+          type: string
+          enum: [new, allocated, partially_allocated, unallocatable, waved, packed, shipped, cancelled]
+        wave_id: { type: string }
+        lines: { type: array, items: { $ref: "#/components/schemas/OrderLine" } }
+    Task:
+      type: object
+      required: [id, kind, state, qty, created_at]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [putaway, pick, pack, count, return_intake, relocate, disposition] }
+        reason: { type: string, description: Why a count task exists (schedule, exception, recount) }
+        state: { type: string, enum: [open, assigned, in_progress, completed, cancelled, exception] }
+        assigned_to: { type: string }
+        sku: { type: string }
+        lot: { type: string }
+        lpn: { type: string }
+        from_location: { type: string }
+        to_location: { type: string }
+        qty: { type: integer }
+        order_id: { type: string }
+        wave_id: { type: string }
+        route_seq: { type: integer }
+        exception_reason: { type: string }
+        created_at: { type: string, format: date-time }
+    Position:
+      type: object
+      properties:
+        sku: { type: string }
+        lot: { type: string }
+        location: { type: string }
+        lpn: { type: string }
+        available: { type: integer }
+        reserved: { type: integer }
+        in_transit: { type: integer }
+        quarantined: { type: integer }
+        damaged: { type: integer }
+    Movement:
+      type: object
+      properties:
+        seq: { type: integer }
+        id: { type: string }
+        kind: { type: string }
+        from_location: { type: string }
+        from_state: { type: string }
+        to_location: { type: string }
+        to_state: { type: string }
+        sku: { type: string }
+        lot: { type: string }
+        lpn: { type: string }
+        qty: { type: integer }
+        occurred_at: { type: string, format: date-time }
+        task_id: { type: string }
+        order_id: { type: string }
+    Command:
+      type: object
+      required: [key, type, payload]
+      properties:
+        key: { type: string, description: Client generated idempotency key }
+        type: { type: string, enum: [receive, start, putaway, pick, pack, exception, ship, count_start, count, return_receive, disposition, relocate] }
+        payload: { type: object }
+    CommandResult:
+      type: object
+      required: [key, status, code]
+      properties:
+        key: { type: string }
+        status: { type: string, enum: [applied, duplicate, rejected] }
+        code: { type: integer }
+        reason: { type: string }
+        result: { type: object }
+paths:
+  /v1/me:
+    get:
+      operationId: getMe
+      summary: The authenticated caller
+      responses: { "200": { description: OK } }
+  /v1/warehouses:
+    get:
+      operationId: listWarehouses
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/catalogue:
+    get:
+      operationId: getCatalogue
+      summary: SKUs and locations snapshot for offline caching (not paginated)
+      parameters: [{ $ref: "#/components/parameters/wid" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/stock:
+    get:
+      operationId: listStock
+      summary: Stock explorer. Non-zero positions at real locations.
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: sku, in: query, schema: { type: string } }
+        - { name: location, in: query, schema: { type: string } }
+        - { $ref: "#/components/parameters/cursor" }
+        - { $ref: "#/components/parameters/limit" }
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/movements:
+    get:
+      operationId: listMovements
+      summary: Movement timeline in log order
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: sku, in: query, schema: { type: string } }
+        - { name: location, in: query, schema: { type: string } }
+        - { name: order_id, in: query, schema: { type: string } }
+        - { name: task_id, in: query, schema: { type: string } }
+        - { $ref: "#/components/parameters/cursor" }
+        - { $ref: "#/components/parameters/limit" }
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/asns:
+    post:
+      operationId: createASN
+      summary: Create an ASN (idempotent on ref). Scope asn:write.
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/idem" }]
+      responses: { "201": { description: Created }, "422": { $ref: "#/components/responses/Problem" } }
+    get:
+      operationId: listASNs
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: state, in: query, schema: { type: string } }
+        - { $ref: "#/components/parameters/cursor" }
+        - { $ref: "#/components/parameters/limit" }
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/asns/{id}:
+    get:
+      operationId: getASN
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: OK }, "404": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/asn-lines/{id}/short:
+    post:
+      operationId: markASNLineShort
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "204": { description: No content } }
+  /v1/warehouses/{wid}/receipts:
+    post:
+      operationId: receive
+      summary: Scan stock off the dock. Requires Idempotency-Key.
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      responses: { "201": { description: Created }, "409": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/orders:
+    post:
+      operationId: createOrder
+      summary: Create an order (idempotent on ref). Scope orders:write.
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/idem" }]
+      responses: { "201": { description: Created } }
+    get:
+      operationId: listOrders
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: state, in: query, schema: { type: string } }
+        - { $ref: "#/components/parameters/cursor" }
+        - { $ref: "#/components/parameters/limit" }
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/orders/{id}:
+    get:
+      operationId: getOrder
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/orders/{id}/allocate:
+    post:
+      operationId: allocateOrder
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/orders/{id}/cancel:
+    post:
+      operationId: cancelOrder
+      summary: Release reservations exactly once and cancel. Scope orders:write.
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "204": { description: No content }, "409": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/orders/{id}/ship:
+    post:
+      operationId: shipOrder
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "201": { description: Created } }
+  /v1/warehouses/{wid}/allocation-sweeps:
+    post:
+      operationId: sweepAllocations
+      summary: Allocate every new, partial or unallocatable order
+      parameters: [{ $ref: "#/components/parameters/wid" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/waves:
+    post:
+      operationId: releaseWave
+      summary: Release a wave of allocated orders and create routed pick tasks
+      parameters: [{ $ref: "#/components/parameters/wid" }]
+      responses: { "201": { description: Created } }
+  /v1/warehouses/{wid}/tasks:
+    get:
+      operationId: listTasks
+      summary: Operators see only their own tasks. state may be a comma separated list.
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: state, in: query, schema: { type: string } }
+        - { name: kind, in: query, schema: { type: string } }
+        - { name: assigned_to, in: query, schema: { type: string } }
+        - { $ref: "#/components/parameters/cursor" }
+        - { $ref: "#/components/parameters/limit" }
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/tasks/claim:
+    post:
+      operationId: claimTask
+      summary: Assign the next open task to the caller. 204 when the queue is empty.
+      parameters: [{ $ref: "#/components/parameters/wid" }]
+      responses: { "200": { description: OK }, "204": { description: Queue empty } }
+  /v1/warehouses/{wid}/tasks/{id}/assign:
+    post:
+      operationId: assignTask
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "204": { description: No content } }
+  /v1/warehouses/{wid}/tasks/{id}/start:
+    post:
+      operationId: startTask
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/tasks/{id}/complete:
+    post:
+      operationId: completeTask
+      summary: Complete a putaway, pick or pack task. Movement and task commit together.
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: OK }, "409": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/tasks/{id}/exception:
+    post:
+      operationId: raiseTaskException
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/commands:
+    post:
+      operationId: applyCommands
+      summary: Apply a batch of client-keyed commands in order (offline sync)
+      parameters: [{ $ref: "#/components/parameters/wid" }]
+      responses: { "200": { description: OK } }
+  /v1/tokens:
+    post:
+      operationId: createToken
+      summary: Mint an external API token. The plaintext is returned once.
+      responses: { "201": { description: Created } }
+    get:
+      operationId: listTokens
+      responses: { "200": { description: OK } }
+  /v1/tokens/{id}:
+    delete:
+      operationId: revokeToken
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      responses: { "204": { description: No content } }
+  /v1/warehouses/{wid}/endpoints:
+    post:
+      operationId: createEndpoint
+      summary: Register a webhook endpoint. The signing secret is returned once. Admin.
+      parameters: [{ $ref: "#/components/parameters/wid" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, events]
+              properties:
+                url: { type: string, format: uri, description: https only, no private or link-local targets in production }
+                events: { type: array, items: { type: string }, description: 'Topics, "prefix.*" or "*"' }
+      responses:
+        "201": { description: Created }
+        "422": { $ref: "#/components/responses/Problem" }
+        "503": { $ref: "#/components/responses/Problem" }
+    get:
+      operationId: listEndpoints
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { $ref: "#/components/parameters/cursor" }
+        - { $ref: "#/components/parameters/limit" }
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/endpoints/{id}:
+    get:
+      operationId: getEndpoint
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: OK }, "404": { $ref: "#/components/responses/Problem" } }
+    delete:
+      operationId: disableEndpoint
+      summary: Stop deliveries. Pending deliveries are kept for replay. Admin.
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "204": { description: No content } }
+  /v1/warehouses/{wid}/endpoints/{id}/rotate-secret:
+    post:
+      operationId: rotateEndpointSecret
+      summary: Issue a new secret. The old one stays valid for overlap_hours (default 24). Admin.
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/endpoints/{id}/deliveries:
+    get:
+      operationId: listDeliveries
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { $ref: "#/components/parameters/id" }
+        - { name: state, in: query, schema: { type: string, enum: [pending, delivered, dead] } }
+        - { $ref: "#/components/parameters/cursor" }
+        - { $ref: "#/components/parameters/limit" }
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/endpoints/{id}/deliveries/{did}/attempts:
+    get:
+      operationId: listDeliveryAttempts
+      summary: Every attempt with its response, for dead letters
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { $ref: "#/components/parameters/id" }
+        - { name: did, in: path, required: true, schema: { type: string } }
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/endpoints/{id}/replay:
+    post:
+      operationId: replayDeliveries
+      summary: Replay one event, every unreplayed dead letter, or all events in a time range
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event_id: { type: string, example: evt_123 }
+                dead_letters: { type: boolean }
+                from: { type: string, format: date-time }
+                to: { type: string, format: date-time }
+      responses: { "202": { description: Accepted } }
+  /v1/warehouses/{wid}/tasks/{id}/count-sheet:
+    get:
+      operationId: getCountSheet
+      summary: What the system holds at a count task's location (sku, lot, LPN), without quantities, for a blind count
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: OK }, "409": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/count-schedules:
+    post:
+      operationId: scheduleCounts
+      summary: Create count tasks for locations that are due (A weekly, B monthly, C quarterly) or touched by an exception. Safe to repeat.
+      parameters: [{ $ref: "#/components/parameters/wid" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/variances:
+    get:
+      operationId: listVariances
+      summary: Variances oldest first. state is unclosed (default), awaiting_recount, open or closed.
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: state, in: query, schema: { type: string } }
+        - { $ref: "#/components/parameters/cursor" }
+        - { $ref: "#/components/parameters/limit" }
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/variances/{id}:
+    get:
+      operationId: getVariance
+      summary: One variance with the movements that committed while the count ran
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: OK }, "404": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/variances/{id}/confirm:
+    post:
+      operationId: confirmVariance
+      summary: Confirm a classification and carry out its action. Shrinkage and found post a count_adjust; damaged posts a quarantine. A note is required when the classification differs from the proposal.
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [classification]
+              properties:
+                classification: { type: string, enum: [timing, miscount, damaged, shrinkage, found, unresolved] }
+                note: { type: string }
+      responses: { "200": { description: OK }, "409": { $ref: "#/components/responses/Problem" }, "422": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/recon-breaks:
+    get:
+      operationId: listReconBreaks
+      summary: Three-way inbound reconciliation breaks
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: state, in: query, schema: { type: string, enum: [unclosed, open, cleared, waived] } }
+        - { name: kind, in: query, schema: { type: string, enum: [short_shipped, over_shipped, putaway_incomplete, lot_mismatch] } }
+        - { $ref: "#/components/parameters/cursor" }
+        - { $ref: "#/components/parameters/limit" }
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/recon-breaks/{id}/waive:
+    post:
+      operationId: waiveReconBreak
+      summary: Accept a break. A note is required.
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "204": { description: No content }, "422": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/reconciliations:
+    post:
+      operationId: runReconciliation
+      summary: Compare ASN, receipt and putaway for every line now. Idempotent.
+      parameters: [{ $ref: "#/components/parameters/wid" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/workbench:
+    get:
+      operationId: getWorkbench
+      summary: Open variances and breaks in four age buckets (under 7 days, 7 to 30, 30 to 90, over 90)
+      parameters: [{ $ref: "#/components/parameters/wid" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/delivery-outcomes:
+    post:
+      operationId: recordDeliveryOutcome
+      summary: A courier reports delivered_collected, rejected or lost, by shipment id or tracking number. Idempotent. A rejected outcome opens a return authorisation and books the lost shipping cost. Scope outcomes:write.
+      parameters: [{ $ref: "#/components/parameters/wid" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [outcome]
+              properties:
+                shipment_id: { type: string }
+                tracking: { type: string }
+                carrier: { type: string }
+                outcome: { type: string, enum: [delivered_collected, rejected, lost] }
+                reported_at: { type: string, format: date-time }
+      responses: { "200": { description: Already recorded }, "201": { description: Recorded }, "404": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/shipments:
+    get:
+      operationId: listShipments
+      summary: Cash-on-delivery shipments newest first with where each stands (dispatched, delivered, remitted, rejected, lost, in_dispute)
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: status, in: query, schema: { type: string } }
+        - { $ref: "#/components/parameters/cursor" }
+        - { $ref: "#/components/parameters/limit" }
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/shipments/{id}/timeline:
+    get:
+      operationId: getShipmentTimeline
+      summary: Dispatch, outcome, return, restock, cost and remittance for one shipment, in time order
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: OK }, "404": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/carriers:
+    get:
+      operationId: listCarrierTerms
+      parameters: [{ $ref: "#/components/parameters/wid" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/carriers/{carrier}/terms:
+    put:
+      operationId: putCarrierTerms
+      summary: Set the agreed COD fee, shipping cost and settlement window for a courier. Admin.
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: carrier, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cod_fee_bps: { type: integer, minimum: 0, maximum: 10000 }
+                cod_fee_flat_minor: { type: integer, minimum: 0 }
+                shipping_cost_minor: { type: integer, minimum: 0 }
+                settlement_days: { type: integer, minimum: 0, maximum: 365 }
+      responses: { "204": { description: No content } }
+  /v1/warehouses/{wid}/remittances:
+    post:
+      operationId: uploadRemittance
+      summary: "Upload a courier remittance CSV (columns courier_ref, tracking, collected, fee, net) as the request body, with ?carrier= and ?filename=. Every line is matched. The same file twice is a no-op. Max 8 MiB. Scope remittances:write."
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: carrier, in: query, required: true, schema: { type: string } }
+        - { name: filename, in: query, schema: { type: string } }
+      requestBody:
+        content:
+          text/csv:
+            schema: { type: string }
+      responses: { "200": { description: File already ingested }, "201": { description: Ingested }, "422": { $ref: "#/components/responses/Problem" } }
+    get:
+      operationId: listRemittances
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/limit" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/settlement-scans:
+    post:
+      operationId: scanUnremitted
+      summary: Open an unremitted case for each delivered COD shipment not paid within its window. Safe to repeat.
+      parameters: [{ $ref: "#/components/parameters/wid" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/settlement-breaks:
+    get:
+      operationId: listSettlementBreaks
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: state, in: query, schema: { type: string, enum: [unclosed, open, resolved, cleared] } }
+        - { name: kind, in: query, schema: { type: string, enum: [short_remitted, unremitted, remitted_for_rejected, unknown_shipment, duplicate_remittance] } }
+        - { $ref: "#/components/parameters/cursor" }
+        - { $ref: "#/components/parameters/limit" }
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/settlement-breaks/{id}/resolve:
+    post:
+      operationId: resolveSettlementBreak
+      summary: Close a case with a note. Written-off money also needs a classified reason.
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resolution, note]
+              properties:
+                resolution: { type: string, enum: [recovered, written_off, no_error] }
+                note: { type: string }
+                writeoff_reason: { type: string, enum: [courier_fee_dispute, customer_short_paid, lost_in_transit, data_error, goodwill] }
+      responses: { "200": { description: OK }, "422": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/settlement/summary:
+    get:
+      operationId: getSettlementSummary
+      summary: Ledger totals in minor units, including what couriers still owe
+      parameters: [{ $ref: "#/components/parameters/wid" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/returns:
+    get:
+      operationId: listReturns
+      summary: Return authorisations newest first, with their lines
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: state, in: query, schema: { type: string, enum: [authorised, received, dispositioned, cancelled] } }
+        - { $ref: "#/components/parameters/cursor" }
+        - { $ref: "#/components/parameters/limit" }
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/returns/lookup:
+    get:
+      operationId: lookupReturn
+      summary: The return expected for a tracking number (scanner intake)
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: tracking, in: query, required: true, schema: { type: string } }
+      responses: { "200": { description: OK }, "404": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/slotting/proposals:
+    get:
+      operationId: listSlottingProposals
+      summary: Proposals written by the slotting job, newest first. The saving shown is the replayed one; solver_estimate is the solver's own proxy and is for reference only.
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/limit" }]
+      responses: { "200": { description: OK } }
+  /v1/warehouses/{wid}/slotting/proposals/{id}:
+    get:
+      operationId: getSlottingProposal
+      summary: One proposal with its moves, and once carried out, how real wave routes changed
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: OK }, "404": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/slotting/proposals/{id}/replay:
+    post:
+      operationId: replaySlottingProposal
+      summary: Replay the historical waves against the current and the proposed layout with the pick router and store both distances
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: OK }, "422": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/slotting/proposals/{id}/accept:
+    post:
+      operationId: acceptSlottingProposal
+      summary: Create relocate tasks for a replayed proposal. Refused unless the replayed saving is positive.
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "202": { description: Accepted }, "422": { $ref: "#/components/responses/Problem" } }
+  /v1/warehouses/{wid}/slotting/proposals/{id}/reject:
+    post:
+      operationId: rejectSlottingProposal
+      parameters: [{ $ref: "#/components/parameters/wid" }, { $ref: "#/components/parameters/id" }]
+      responses: { "204": { description: No content } }
+  /v1/warehouses/{wid}/floor-map:
+    get:
+      operationId: getFloorMap
+      summary: Every location with its zone, units on hand, and completed picks over the last days (default 90)
+      parameters:
+        - { $ref: "#/components/parameters/wid" }
+        - { name: days, in: query, schema: { type: integer, minimum: 1, maximum: 3650 } }
+      responses: { "200": { description: OK } }

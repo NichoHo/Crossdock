@@ -1,0 +1,17 @@
+{
+  "allocate_p50_ms": 13.962,
+  "allocate_p99_ms": 31.892,
+  "commit": "unversioned",
+  "errors": 0,
+  "host": "windows/amd64, 16 CPUs, Go go1.26.5",
+  "order_states": {
+    "allocated": 440,
+    "partially_allocated": 1,
+    "unallocatable": 559
+  },
+  "orders": 1000,
+  "scenario": "allocation-burst",
+  "seconds": 10.3491704,
+  "warehouse": "wh-f7a62199f9d1",
+  "when": "2026-10-08T16:56:45Z"
+}

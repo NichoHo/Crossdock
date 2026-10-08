@@ -1,0 +1,14 @@
+{
+  "applied": 5000,
+  "batch_p99_ms": 15357.199,
+  "commit": "unversioned",
+  "duplicates": 50,
+  "host": "windows/amd64, 16 CPUs, Go go1.26.5",
+  "queued_each": 100,
+  "rejected": 50,
+  "scanners": 50,
+  "scenario": "offline-sync-wave",
+  "seconds": 15.3639141,
+  "warehouse": "wh-97ed45429ccb",
+  "when": "2026-10-08T16:59:25Z"
+}

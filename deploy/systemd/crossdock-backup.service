@@ -1,0 +1,10 @@
+[Unit]
+Description=Crossdock database backup
+Requires=crossdock.service
+After=crossdock.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/crossdock
+EnvironmentFile=-/opt/crossdock/deploy/.env
+ExecStart=/opt/crossdock/deploy/backup.sh

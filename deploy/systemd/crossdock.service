@@ -1,0 +1,16 @@
+[Unit]
+Description=Crossdock (Docker Compose stack)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/crossdock
+ExecStart=/usr/bin/docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --build
+ExecStop=/usr/bin/docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env stop
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target

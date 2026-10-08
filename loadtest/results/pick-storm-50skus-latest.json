@@ -1,0 +1,16 @@
+{
+  "claim_p99_ms": 166.756,
+  "commit": "unversioned",
+  "confirm_p50_ms": 211.965,
+  "confirm_p99_ms": 437.361,
+  "errors": 0,
+  "host": "windows/amd64, 16 CPUs, Go go1.26.5",
+  "idle_claims": 0,
+  "operators": 100,
+  "picks_confirmed": 6000,
+  "scenario": "pick-storm-50skus",
+  "seconds": 60,
+  "skus": 50,
+  "warehouse": "wh-d51fe1eac1a8",
+  "when": "2026-10-08T17:05:11Z"
+}

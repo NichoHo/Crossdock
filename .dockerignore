@@ -1,0 +1,12 @@
+.git
+bin
+loadtest/results
+**/node_modules
+web/.next
+web/.env.local
+web/test-results
+web/playwright-report
+cmd/slotting/.venv
+**/__pycache__
+.env
+*.env
