@@ -310,7 +310,7 @@ func seedMinimal(t *testing.T, db *sql.DB) (
 		t.Fatalf("seed zone: %v", err)
 	}
 
-	locationCode = inventory.LocationCode(fmt.Sprintf("A01-01-A-1"))
+	locationCode = inventory.LocationCode("A01-01-A-1")
 	_, err = db.ExecContext(ctx,
 		`INSERT INTO locations (code, warehouse_id, zone_id, max_units) VALUES ($1, $2, $3, $4)`,
 		string(locationCode), string(wid), zoneID, 100,
@@ -505,9 +505,6 @@ func comparePositionSets(t *testing.T, live, rebuilt []inventory.Position) {
 // TestMain can be used to set the CROSSDOCK_TEST_DB_URL from the environment.
 // Tests are skipped if the URL is not set (allow running without a DB).
 func TestMain(m *testing.M) {
-	if os.Getenv("CROSSDOCK_TEST_DB_URL") == "" {
-		// If TEST_DATABASE_URL is also absent, testdb.Open will skip.
-		// We don't fail here to allow `go test ./...` to work without a DB.
-	}
+	// Without CROSSDOCK_TEST_DB_URL, testdb.Open skips each test, so `go test ./...` works without a database.
 	os.Exit(m.Run())
 }

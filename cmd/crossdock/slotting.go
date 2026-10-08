@@ -19,7 +19,7 @@ import (
 // crossdock slotting replay <proposal-id>  measure a proposal with the platform's router
 func cmdSlotting(args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: crossdock slotting run|replay ...")
+		return errors.New("usage: crossdock slotting run|replay (see -h for flags)")
 	}
 	db, err := openDB(requireEnv("CROSSDOCK_DATABASE_URL"))
 	if err != nil {

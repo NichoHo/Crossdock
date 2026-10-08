@@ -28,7 +28,6 @@ type World struct {
 	SKUs     []inventory.SKUID
 	PickCap  int
 	BulkCap  int
-	zoneByID map[string]string
 }
 
 // Seed creates a warehouse with one location per zone purpose and n SKUs.

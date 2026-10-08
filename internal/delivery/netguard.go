@@ -60,7 +60,7 @@ func ValidateURL(raw string, allowPrivate bool) (*url.URL, error) {
 	if err != nil || u.Host == "" || u.User != nil {
 		return nil, fmt.Errorf("url must be absolute, without credentials")
 	}
-	if u.Scheme != "https" && !(allowPrivate && u.Scheme == "http") {
+	if u.Scheme != "https" && (!allowPrivate || u.Scheme != "http") {
 		return nil, fmt.Errorf("url must use https")
 	}
 	if ip := net.ParseIP(u.Hostname()); ip != nil && blockedIP(ip, allowPrivate) {

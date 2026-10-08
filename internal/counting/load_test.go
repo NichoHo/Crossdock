@@ -30,7 +30,6 @@ type loadWorld struct {
 	locs   []inventory.LocationCode
 	skus   []inventory.SKUID
 	lots   []inventory.LotID
-	pickIn []string // pick task ids are claimed, not listed
 }
 
 func newLoadWorld(t *testing.T) *loadWorld {
