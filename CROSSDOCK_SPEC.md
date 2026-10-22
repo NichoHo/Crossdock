@@ -650,14 +650,18 @@ character while someone is talking.
 Everything below is for both the console and the scanner, with the scanner
 constraints taking precedence when they conflict.
 
+The exact visual values (tokens, CSS, components, page layouts, icons) are in
+[DESIGN.md](DESIGN.md). This section keeps the principles and the summary.
+
 ### 12.1 Principles
 
 1. **Contrast over subtlety.** Minimum 7:1 for body text and codes. No light
    grey text on white. No thin weights.
 2. **State by shape and colour, never colour alone.** Every status has an icon
    or a fill pattern as well as a hue.
-3. **Touch targets of 48 pixels minimum, 56 for primary actions.** Gloved
-   thumbs.
+3. **Touch targets of 48 pixels minimum, 56 for primary actions, on the
+   scanner.** Gloved thumbs. The console is a desk tool with a mouse and
+   keyboard, so its controls are 32 pixels; on a touch screen they grow to 44.
 4. **The primary action lives at the bottom of the screen on the scanner.** It
    is reachable by thumb without changing grip.
 5. **Confirm with sound and vibration.** A successful scan beeps and pulses. A
@@ -673,25 +677,26 @@ constraints taking precedence when they conflict.
 
 ### 12.2 Colour
 
-The palette borrows from safety signage, because that is the visual language
-the environment already speaks, and uses it for status only.
+A quiet neutral interface (white content, light grey sidebar, hairline borders,
+one blue accent) with colour reserved for status. Full token table with
+measured contrast: DESIGN.md section 3.
 
 | Token | Light | Dark | Role |
 |---|---|---|---|
-| `--surface` | `#F4F5F2` | `#121514` | page ground |
-| `--surface-raised` | `#FFFFFF` | `#1B1F1D` | panels, cards |
-| `--ink` | `#141816` | `#ECEEEA` | text, codes |
-| `--ink-muted` | `#4E5652` | `#A9B0AC` | secondary text, 7:1 on surface |
-| `--line` | `#C9CEC9` | `#333A36` | rules, borders |
-| `--action` | `#0B5C8E` | `#5FB0E6` | primary buttons, links, focus ring |
-| `--ok` | `#1E6B3A` | `#5FC77F` | confirmed, complete, in stock |
-| `--attention` | `#8A5A00` | `#F2B233` | pending, partial, ageing 7 to 30 |
-| `--stop` | `#9B1C1C` | `#F07070` | rejected, exception, over 90 days |
-| `--hold` | `#5B3D8E` | `#B693E8` | quarantined, on hold |
+| `--bg` | `#FFFFFF` | `#161618` | content, cards, tables |
+| `--bg-subtle` | `#FAFAFA` | `#111113` | sidebar, table header, scanner ground |
+| `--text` | `#1C1D1F` | `#EDEDEF` | text, codes |
+| `--text-secondary` | `#505259` | `#A1A3AA` | secondary text, 7:1 on its grounds |
+| `--border` | `#E9E9EC` | `#2A2A2E` | rules, borders |
+| `--accent` | `#2563EB` | `#6EA8FF` | primary buttons, links, focus ring |
+| `--ok` | `#166534` | `#4ADE80` | confirmed, complete, in stock |
+| `--attention` | `#854D0E` | `#FACC15` | pending, partial, ageing 7 to 30 |
+| `--stop` | `#991B1B` | `#FCA5A5` | rejected, exception, over 90 days |
+| `--hold` | `#5B21B6` | `#C4B5FD` | quarantined, on hold |
 
-`--attention` in dark mode is safety yellow at full strength. In light mode it is
-darkened to hold contrast on a light ground. This is the one place the palette
-is loud, and it is loud for the reason a hazard stripe is loud.
+Each status colour also has a tint (`--ok-bg` and so on) for the status pill.
+`--attention` in dark mode is safety yellow at full strength. This is the one
+place the palette is loud, and it is loud for the reason a hazard stripe is loud.
 
 Status also carries a shape: `--ok` a filled circle, `--attention` a filled
 triangle, `--stop` a filled octagon, `--hold` a filled diamond, pending an
@@ -702,9 +707,9 @@ screen.
 
 Two faces, chosen for legibility rather than character.
 
-- **UI and prose:** Atkinson Hyperlegible. Designed for low vision with
-  exaggerated letterform differences, which is precisely the requirement at
-  arm's length under glare. Weights 400 and 700 only.
+- **UI and prose:** Inter, weights 400, 500 and 600, with the character
+  variants `cv05` (lower-case l with a tail) and `cv08` (upper-case I with
+  serifs) turned on so `l`, `I` and `1` stay distinct at arm's length.
 - **Codes and numbers:** JetBrains Mono. Slashed zero, distinct `1` `l` `I`,
   `tabular-nums` by default. Used for every SKU, LPN, location, lot, tracking
   number, quantity, and timestamp.
@@ -713,21 +718,22 @@ Scale, in pixels, fixed rather than fluid because the devices are known:
 
 | Role | Console | Scanner |
 |---|---|---|
-| Code, primary (the thing being scanned) | 18 | 28 |
-| Body | 15 | 18 |
-| Label | 12 uppercase, 0.08em tracking | 14 uppercase, 0.08em tracking |
+| Code, primary (the thing being scanned) | 13 in tables, 15 in the page bar | 28 |
+| Body | 14 | 18 |
+| Label | 13, sentence case | 14, sentence case |
 | Quantity, primary | 22 | 40 |
-| Heading | 20 | 22 |
+| Heading | 15 | 22 |
 
-Nothing on the scanner is below 14 pixels.
+Nothing on the scanner is below 14 pixels. Labels are never uppercase.
 
 ### 12.4 Layout
 
-**Console:** a fixed left rail of sections, a top bar with warehouse selector
-and the sync indicator, and a content area that is dense by design. Tables are
-the primary component and they are built for scanning by eye: zebra rows,
-sticky headers, right-aligned numbers, codes in mono, a status shape in the first
-column. Rows expand in place for detail. No modal dialogs for reading; modals are
+**Console:** a fixed left sidebar with the warehouse switcher at the top and
+grouped sections with monotone icons (no emoji), a slim page bar per page, and a
+content area that is dense by design. Tables are the primary component and they
+are built for scanning by eye: hairline row and column borders, a type icon in
+each header, sticky headers, right-aligned numbers, codes in mono, status as a
+shaped pill, and a footer with the row count. Rows expand in place for detail. No modal dialogs for reading; modals are
 for confirmations only.
 
 **Scanner:** one task per screen. Top: task kind and the location or LPN in
