@@ -61,7 +61,7 @@ e2e: build ## Run the Playwright scanner cycle against a running stack
 	@WH=wh-e2e-$$(date +%s); 	  CROSSDOCK_DATABASE_URL=$(CROSSDOCK_DATABASE_URL) $(BIN) generate "E2E $$WH" $$WH && SL=; if [ -x cmd/slotting/.venv/Scripts/python.exe ] || [ -x cmd/slotting/.venv/bin/python ]; then CROSSDOCK_DATABASE_URL=$(CROSSDOCK_DATABASE_URL) $(BIN) generate history -warehouse $$WH && CROSSDOCK_DATABASE_URL=$(CROSSDOCK_DATABASE_URL) $(BIN) slotting run -warehouse $$WH && SL=1; fi && 	  cd web && set -a && . ./.env.local && set +a && 	  E2E_WAREHOUSE=$$WH E2E_SLOTTING=$$SL E2E_OPERATOR=$${E2E_OPERATOR:-olga} npx playwright test
 
 load: ## Allocation burst, pick storm, offline sync (needs the stack up and CROSSDOCK_* env; see loadtest/load_test.go)
-	$(GO) test -tags load -count=1 -timeout 30m -v ./loadtest
+	LOAD_COMMIT=$$(git rev-parse --short HEAD) $(GO) test -tags load -count=1 -timeout 30m -v ./loadtest
 
 load-webhooks: build ## Webhook fan-out load scenario (needs Redpanda: docker compose ... up -d redpanda)
 	CROSSDOCK_DATABASE_URL=$(CROSSDOCK_DATABASE_URL) CROSSDOCK_BROKERS=$${CROSSDOCK_BROKERS:-127.0.0.1:19092} 	  $(GO) run ./cmd/webhook-load -events 100 -out loadtest/results/webhook-fanout-latest.json

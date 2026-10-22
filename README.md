@@ -2,7 +2,7 @@
 
 Warehouse platform where stock is conserved, every position is rebuildable from the movement log, and reservations are decided under row locks. The blueprint is `CROSSDOCK_SPEC.md`.
 
-Status: Phases 0 to 4 are built (inventory core, inbound, outbound, task queue, REST API, floor console, offline scanner PWA, signed webhook delivery over Redpanda, cycle counting and reconciliation, returns and cash-on-delivery settlement).
+Status: Phases 0 to 7 are built (inventory core, inbound, outbound, task queue, REST API, floor console, offline scanner PWA, signed webhook delivery over Redpanda, cycle counting and reconciliation, returns and cash-on-delivery settlement, slotting, the single-host deployment, load tests, security hardening). It is not on a public URL yet, and sign-in is still a stand-in (see Security).
 
 ## Run it locally
 
@@ -160,7 +160,7 @@ Console: Slotting (proposals, moves, accept or reject) and Floor map (pick heat 
 
 ### Load results
 
-Run with `make load` against a running stack. Host for all rows: Windows 11, 16 CPUs, Docker Desktop for PostgreSQL and Redpanda, the API and the load generator on the same machine. The code is not under version control yet, so the commit field is empty. Raw results are in `loadtest/results/`.
+Run with `make load` against a running stack. Host for all rows: Windows 11, 16 CPUs, Docker Desktop for PostgreSQL and Redpanda, the API and the load generator on the same machine. The rows below were run before the code was in git, so their commit field says `unversioned`. `make load` now records the current commit. Raw results are in `loadtest/results/`.
 
 | Scenario | Result | Target | Met |
 |---|---|---|---|
