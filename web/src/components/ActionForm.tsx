@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import type { ActionState } from "@/app/actions";
+import { Banner } from "@/components/Banner";
 
 export function SubmitButton({ children, className = "btn" }: { children: React.ReactNode; className?: string }) {
   const { pending } = useFormStatus();
@@ -25,13 +26,13 @@ export function ActionForm({
   return (
     <form action={formAction} className={className}>
       {children}
-      {state.error && <div className="banner-error" role="alert">{state.error}</div>}
-      {state.ok && <div role="status" className="muted">{state.ok}</div>}
+      {state.error && <Banner>{state.error}</Banner>}
+      {state.ok && <Banner tone="ok">{state.ok}</Banner>}
       {state.secret && (
-        <div className="panel" role="alert" style={{ marginTop: 8 }}>
+        <div className="panel secret" role="alert">
           <div className="label">Signing secret (shown once)</div>
-          <code style={{ fontSize: 15, wordBreak: "break-all", userSelect: "all" }} translate="no">{state.secret}</code>
-          <p className="muted" style={{ margin: "8px 0 0" }}>Copy it now. It is stored encrypted and cannot be shown again.</p>
+          <code className="secret-value" translate="no">{state.secret}</code>
+          <p className="muted">Copy it now. It is stored encrypted and cannot be shown again.</p>
         </div>
       )}
     </form>

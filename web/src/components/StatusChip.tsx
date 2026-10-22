@@ -34,7 +34,14 @@ export function toneFor(state: string): Tone {
   return TONES[state] ?? "pending";
 }
 
-export function StatusChip({ state, size = 14, label }: { state: string; size?: number; label?: string }) {
+export function StatusShape({ state, size = 10 }: { state: string; size?: number }) {
+  const tone = toneFor(state);
+  return (
+    <svg className="shape" data-tone={tone} width={size} height={size} viewBox="0 0 14 14" aria-hidden="true">{SHAPES[tone]}</svg>
+  );
+}
+
+export function StatusChip({ state, size = 10, label }: { state: string; size?: number; label?: string }) {
   const tone = toneFor(state);
   return (
     <span className="chip" data-tone={tone}>

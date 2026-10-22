@@ -1,30 +1,15 @@
-import { SignOutButton } from "@/components/SignOutButton";
 import { ConsoleNav } from "@/components/ConsoleNav";
+import { EmptyState } from "@/components/EmptyState";
 import { requireCtx } from "@/lib/context";
-import { selectWarehouse } from "../actions";
 
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {
   const { session, warehouses, wid } = await requireCtx({ minRole: "supervisor" });
   return (
     <div className="shell">
       <a className="skip" href="#main">Skip to content</a>
-      <ConsoleNav />
-      <header className="topbar">
-        <form action={selectWarehouse} className="row">
-          <label className="label" htmlFor="wid">Warehouse</label>
-          <select id="wid" name="wid" defaultValue={wid} style={{ minHeight: 40 }}>
-            {warehouses.map((w) => (
-              <option key={w.id} value={w.id}>{w.name} ({w.id})</option>
-            ))}
-          </select>
-          <button className="btn secondary small" type="submit">Switch</button>
-        </form>
-        <span className="spacer" />
-        <span className="muted">{session.user} ({session.role})</span>
-        <SignOutButton />
-      </header>
+      <ConsoleNav warehouses={warehouses} wid={wid} user={session.user} role={session.role} />
       <main className="main" id="main">
-        {wid ? children : <div className="empty">No warehouse exists yet. Run `crossdock generate` to create one.</div>}
+        {wid ? children : <div className="page-body"><EmptyState>No warehouse exists yet. Run <code>crossdock generate</code> to create one.</EmptyState></div>}
       </main>
     </div>
   );
