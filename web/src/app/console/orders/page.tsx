@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusChip } from "@/components/StatusChip";
 import { TableFoot, Th } from "@/components/Table";
-import { Tabs } from "@/components/Tabs";
+import { Tabs, stateTabs } from "@/components/Tabs";
 import type { Order, Page } from "@/lib/types";
 import { cancelOrder, releaseWave, sweepAllocations } from "../../actions";
 
@@ -42,14 +42,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       />
       <div className="page-body">
         <div className="toolbar">
-          <Tabs
-            label="Filter by state"
-            items={FILTERS.map((f) => ({
-              href: f ? `/console/orders?state=${f}` : "/console/orders",
-              label: f ? f.replaceAll("_", " ") : "all",
-              active: q.state === f || (!q.state && f === ""),
-            }))}
-          />
+          <Tabs label="Filter by state" items={stateTabs("/console/orders", FILTERS, q.state, (f) => f.replaceAll("_", " ") || "all")} />
         </div>
         {error && <Banner>{error}</Banner>}
         {data && data.items.length === 0 && <EmptyState>No orders in this state.</EmptyState>}

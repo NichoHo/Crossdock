@@ -1,6 +1,6 @@
 // Status = shape + colour + label (spec 12.2). Shapes are plain geometry so they
 // survive monochrome print and dim screens.
-export type Tone = "ok" | "attention" | "stop" | "hold" | "pending";
+type Tone = "ok" | "attention" | "stop" | "hold" | "pending";
 
 const SHAPES: Record<Tone, React.ReactNode> = {
   ok: <circle cx="7" cy="7" r="6" fill="currentColor" />,
@@ -30,22 +30,22 @@ const TONES: Record<string, Tone> = {
   active: "ok", disabled: "hold", delivered: "ok", cod_delivered: "attention", dead: "stop", open_breaker: "stop", half_open: "attention",
 };
 
-export function toneFor(state: string): Tone {
+function toneFor(state: string): Tone {
   return TONES[state] ?? "pending";
 }
 
-export function StatusShape({ state, size = 10 }: { state: string; size?: number }) {
+export function StatusShape({ state }: { state: string }) {
   const tone = toneFor(state);
   return (
-    <svg className="shape" data-tone={tone} width={size} height={size} viewBox="0 0 14 14" aria-hidden="true">{SHAPES[tone]}</svg>
+    <svg className="shape" data-tone={tone} width={10} height={10} viewBox="0 0 14 14" aria-hidden="true">{SHAPES[tone]}</svg>
   );
 }
 
-export function StatusChip({ state, size = 10, label }: { state: string; size?: number; label?: string }) {
+export function StatusChip({ state, label }: { state: string; label?: string }) {
   const tone = toneFor(state);
   return (
     <span className="chip" data-tone={tone}>
-      <svg width={size} height={size} viewBox="0 0 14 14" aria-hidden="true">{SHAPES[tone]}</svg>
+      <svg width={10} height={10} viewBox="0 0 14 14" aria-hidden="true">{SHAPES[tone]}</svg>
       {label ?? state.replaceAll("_", " ")}
     </span>
   );

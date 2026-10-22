@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusChip } from "@/components/StatusChip";
 import { TableFoot, Th } from "@/components/Table";
-import { Tabs } from "@/components/Tabs";
+import { Tabs, stateTabs } from "@/components/Tabs";
 import type { Page, ReturnAuth } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Returns" };
@@ -27,14 +27,7 @@ export default async function ReturnsPage({ searchParams }: { searchParams: Prom
       <PageHeader section="returns" title="Returns" />
       <div className="page-body">
         <div className="toolbar">
-          <Tabs
-            label="Filter by state"
-            items={STATES.map((s) => ({
-              href: s ? `/console/returns?state=${s}` : "/console/returns",
-              label: s || "all",
-              active: (q.state ?? "") === s,
-            }))}
-          />
+          <Tabs label="Filter by state" items={stateTabs("/console/returns", STATES, q.state)} />
         </div>
         {error && <Banner>{error}</Banner>}
         {data && data.items.length === 0 && <EmptyState>No returns. A rejected cash-on-delivery parcel opens one automatically.</EmptyState>}

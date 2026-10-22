@@ -12,3 +12,8 @@ export function Tabs({ label, items }: { label: string; items: { href: string; l
     </nav>
   );
 }
+
+/** Tabs for "all" plus one per state, linking to `base` with ?state=. */
+export function stateTabs(base: string, states: string[], current: string | undefined, label = (s: string) => s || "all") {
+  return states.map((s) => ({ href: s ? `${base}?state=${s}` : base, label: label(s), active: (current ?? "") === s }));
+}

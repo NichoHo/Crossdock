@@ -245,7 +245,7 @@ export function ScannerApp({ wid, user }: { wid: string; user: string; role: str
               ))}
             </ul>
           </div>
-          <div className="scan-actions"><button className="btn secondary grow" onClick={() => setScreen({ name: "home" })}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button></div>
+          <div className="scan-actions"><BackButton secondary onClick={() => setScreen({ name: "home" })} /></div>
         </>
       )}
 
@@ -263,7 +263,7 @@ export function ScannerApp({ wid, user }: { wid: string; user: string; role: str
                 ))}
               </ul>
             </div>
-            <div className="scan-actions"><button className="btn secondary grow" onClick={() => setScreen({ name: "asns" })}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button></div>
+            <div className="scan-actions"><BackButton secondary onClick={() => setScreen({ name: "asns" })} /></div>
           </>
         );
       })()}
@@ -289,6 +289,14 @@ export function ScannerApp({ wid, user }: { wid: string; user: string; role: str
         <button className="btn small secondary icon" onClick={() => void refresh().then(runSync)} aria-label="Sync now"><ArrowsClockwise size={18} weight="bold" aria-hidden="true" /></button>
       </div>
     </div>
+  );
+}
+
+function BackButton({ onClick, secondary }: { onClick: () => void; secondary?: boolean }) {
+  return (
+    <button className={secondary ? "btn secondary grow" : "btn text back"} onClick={onClick}>
+      <ArrowLeft size={22} weight="bold" aria-hidden="true" />Back
+    </button>
   );
 }
 
@@ -410,7 +418,7 @@ function TaskScreen({ task, cat, onBack, onConfirm, onException }: {
         {task.kind === "pack" && <p>Pack every picked item for order <span className="code">{task.order_id}</span>, then confirm.</p>}
       </div>
       <div className="scan-actions">
-        <button className="btn text back" onClick={onBack}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button>
+        <BackButton onClick={onBack} />
         <button className="btn text" disabled={busy} onClick={() => onException(task.kind === "pick" ? "short_pick: nothing found" : task.kind === "putaway" ? "cannot_putaway" : "skipped")}>
           {task.kind === "pick" ? "Short" : "Skip"}
         </button>
@@ -448,7 +456,7 @@ function ReceiveScreen({ line, cat, onBack, onConfirm }: {
         {!dock && <Banner>No receiving dock in the cached catalogue. Go online once to load it.</Banner>}
       </div>
       <div className="scan-actions">
-        <button className="btn text back" onClick={onBack}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button>
+        <BackButton onClick={onBack} />
         <button className="btn primary" disabled={!complete || !dock || qty < 1 || busy}
           onClick={async () => { setBusy(true); try { await onConfirm({ qty, lpn: done["line-lpn"], location: dock }); } finally { setBusy(false); } }}>
           Confirm
@@ -519,7 +527,7 @@ function CountScreen({ task, sheet, cat, started, onStart, onBack, onSubmit }: {
         <div className="scan-last" data-ok={msg?.ok} role="status" aria-live="assertive">{msg?.text}</div>
       </div>
       <div className="scan-actions">
-        <button className="btn text back" onClick={onBack}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button>
+        <BackButton onClick={onBack} />
         <button className="btn primary" disabled={!ready || busy} onClick={submit}>Submit count</button>
       </div>
     </>
@@ -558,7 +566,7 @@ function DispositionScreen({ task, onBack, onDecide }: { task: Task; onBack: () 
           ))}
         </ul>
       </div>
-      <div className="scan-actions"><button className="btn text back" onClick={onBack}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button></div>
+      <div className="scan-actions"><BackButton onClick={onBack} /></div>
     </>
   );
 }
@@ -637,7 +645,7 @@ function ReturnScreen({ expected, cat, onBack, onConfirm }: {
         <div className="scan-last" data-ok={msg?.ok} role="status" aria-live="assertive">{msg?.text}</div>
       </div>
       <div className="scan-actions">
-        <button className="btn text back" onClick={onBack}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button>
+        <BackButton onClick={onBack} />
         <button className="btn primary" disabled={!tracking || lines.length === 0 || busy}
           onClick={async () => { setBusy(true); try { await onConfirm({ tracking: tracking!, lines }); } finally { setBusy(false); } }}>
           Confirm return
@@ -664,7 +672,7 @@ function ShipScreen({ cat, onBack, onConfirm }: { cat?: Catalogue; onBack: () =>
         <div className="scan-last" data-ok={last?.ok} role="status" aria-live="assertive">{last?.text}</div>
       </div>
       <div className="scan-actions">
-        <button className="btn text back" onClick={onBack}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button>
+        <BackButton onClick={onBack} />
         <button className="btn primary" disabled={!complete || busy}
           onClick={async () => { setBusy(true); try { await onConfirm({ order_id: done.order, tracking: done.tracking, carrier: done.carrier }); } finally { setBusy(false); } }}>
           Confirm

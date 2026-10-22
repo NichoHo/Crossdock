@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusChip } from "@/components/StatusChip";
 import { TableFoot, Th } from "@/components/Table";
-import { Tabs } from "@/components/Tabs";
+import { Tabs, stateTabs } from "@/components/Tabs";
 import type { Attempt, DeliveryRow, Endpoint, Page } from "@/lib/types";
 import { disableEndpoint, replayDeliveries, rotateSecret } from "../../../actions";
 
@@ -117,14 +117,7 @@ export default async function EndpointPage({
 
             <h2>Deliveries</h2>
             <div className="toolbar">
-              <Tabs
-                label="Filter by state"
-                items={STATES.map((s) => ({
-                  href: s ? `/console/endpoints/${e.id}?state=${s}` : `/console/endpoints/${e.id}`,
-                  label: s || "all",
-                  active: (q.state ?? "") === s,
-                }))}
-              />
+              <Tabs label="Filter by state" items={stateTabs(`/console/endpoints/${e.id}`, STATES, q.state)} />
             </div>
             {list.error && <Banner>{list.error}</Banner>}
             {list.data && list.data.items.length === 0 && <EmptyState>No deliveries in this view.</EmptyState>}
