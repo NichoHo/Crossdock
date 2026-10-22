@@ -24,7 +24,7 @@ This page lists each control from the spec (section 17), whether it is in place,
 | A removed user or a changed role takes effect on the next request | `getSession()` checks the current user list each time | `resolveSession` unit tests: removed user, changed role, expired, tampered and missing cookies (`web/src/lib/session.test.ts`) |
 | Offline queue cleared on sign-out; unsynced work asks first | `web/src/components/SignOutButton.tsx` | Sign-out clicked in a real browser through the proxy. `leaveWithQueue` unit tests: queue cleared, asks first when work is unsynced, stays signed in if declined (`web/src/lib/offline.test.ts`). |
 | Offline commands re-checked on sync | `/commands` runs the same auth and ownership checks | Offline sync load test: a command for another scanner's task is rejected with a reason |
-| Security headers: HSTS, CSP with `frame-ancestors 'none'`, nosniff, referrer policy, permissions policy | `deploy/Caddyfile` | `curl -I` through the proxy. A browser visited the console, slotting, map, settlement and scanner pages with no CSP violation. |
+| Security headers: HSTS, nosniff, referrer policy, permissions policy (Caddy); CSP with a per-request script nonce and `frame-ancestors 'none'` (web app) | `deploy/Caddyfile`, `web/src/proxy.ts`, `web/src/lib/csp.ts` | `curl -I` shows a different nonce on every request and on every script tag. Unit tests on the policy. A real browser signed in as a supervisor and as an operator and visited the console and scanner pages: no CSP violation, pages hydrate. Styles still allow `unsafe-inline`. |
 | HTTP redirects to HTTPS | Caddy default | `curl -I http://...` returned 308 |
 | API answers are never cached | `Cache-Control: no-store` on every API response | Test |
 | Errors show a generic message and a trace ID; detail goes to the logs | `problem()` | Test checks the ID is present and the detail holds no SQL |
@@ -53,11 +53,11 @@ This page lists each control from the spec (section 17), whether it is in place,
 | **Two-factor on accounts** | Yours to do. Turn it on for the host provider, domain registrar, object storage account, the auth provider once it exists, and every admin user. |
 | **Billing caps and usage alerts** | Yours to do on the host, object storage and the auth provider. |
 | **Secret rotation** | Procedure is in `deploy/README.md`. Nothing reminds you to do it on a schedule. |
-| **CSP without `unsafe-inline`** | Next.js writes inline scripts, so the policy allows them. A per-request nonce removes the need. Not done. |
+| **`unsafe-inline` for styles** | Scripts need the per-request nonce. Styles still allow `unsafe-inline` because React writes `style=` attributes, which a nonce cannot cover. An injected style cannot run code, so the risk is low. |
 | **Rate limit across several API processes** | Limits are per process. Fine for one container. |
 | **Remittance files in a private bucket** | Files are parsed on upload and stored as rows in PostgreSQL, so they sit in the database and its backups. There is no object storage. |
 | **Manual test of admin screens** | Not done. The automated role matrix covers the API. I did not click through every admin and replay screen as each role. |
-| **Service worker under the new CSP** | The policy allows `worker-src 'self'`, but I could not test the worker here because my local certificate is self-signed and browsers refuse to register workers on it. Test on the real host. |
+| **Service worker on the real host** | Registers and activates under the new CSP on `localhost` (checked in a real browser). Not checked over the real certificate and domain. |
 | **Backup upload to object storage** | The `aws s3 cp` step is untested. |
 
 ## Before going live

@@ -12,6 +12,9 @@ export const metadata: Metadata = {
 };
 export const viewport: Viewport = { themeColor: "#0b5c8e", width: "device-width", initialScale: 1 };
 
+// Nonces are made per request (see proxy.ts), so no page may be prerendered.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${atkinson.variable} ${jetbrains.variable}`}>
