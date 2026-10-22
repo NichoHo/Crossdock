@@ -2,7 +2,9 @@
 
 import { SignOutButton } from "@/components/SignOutButton";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { WifiHigh, WifiSlash, ArrowsClockwise, CheckCircle, WarningOctagon } from "@phosphor-icons/react";
+import { WifiHigh, WifiSlash, ArrowsClockwise, CheckCircle, ArrowLeft, ArrowRight, Truck, ArrowUUpLeft, TruckTrailer } from "@phosphor-icons/react";
+import { Banner } from "@/components/Banner";
+import { EmptyState } from "@/components/EmptyState";
 import {
   allCommands, applyOptimistic, dismiss, enqueue, kvGet, kvSet, sync,
   type Command, type CommandType, type Sender,
@@ -163,32 +165,32 @@ export function ScannerApp({ wid, user }: { wid: string; user: string; role: str
             <SignOutButton />
           </header>
           <div className="scan-body">
-            {authLost && <div className="banner-error" role="alert">Session ended. <a href="/login">Sign in again</a>. Queued work is kept.</div>}
+            {authLost && <Banner>Session ended. <a href="/login">Sign in again</a>. Queued work is kept.</Banner>}
             {msg && <div role="status" className="muted">{msg}</div>}
             {rejected.map((c) => (
-              <div key={c.key} className="banner-error" role="alert">
-                <WarningOctagon size={20} weight="fill" aria-hidden="true" /> {c.type} was rejected: {c.reason}
+              <Banner key={c.key}>
+                {c.type} was rejected: {c.reason}
                 <div><button className="btn small secondary" onClick={async () => { await dismiss(c.key); await reloadQueue(); await refresh(); }}>Dismiss</button></div>
-              </div>
+              </Banner>
             ))}
-            {mine.length === 0 && <div className="empty">No tasks on this device. Get the next task or receive a delivery.</div>}
+            {mine.length === 0 && <EmptyState>No tasks on this device. Get the next task or receive a delivery.</EmptyState>}
             <ul className="scan-list">
               {mine.map((t) => (
                 <li key={t.id}>
                   <button onClick={() => setScreen({ name: "task", id: t.id })}>
-                    <span className="label">{t.kind === "count" && t.reason === "recount" ? "recount" : t.kind}</span>{" "}
+                    <span className="tag">{t.kind === "count" && t.reason === "recount" ? "recount" : t.kind}</span>{" "}
                     <span className="code">{t.from_location || t.lpn || t.id}</span>
-                    {t.sku && <div className="code" style={{ fontSize: 16 }}>{t.qty} x {t.sku}</div>}
+                    {t.sku && <div className="code code-s">{t.qty} x {t.sku}</div>}
                   </button>
                 </li>
               ))}
             </ul>
           </div>
-          <div className="scan-actions" style={{ flexWrap: "wrap" }}>
-            <button className="btn secondary" style={{ minHeight: 56, flex: 1 }} onClick={() => setScreen({ name: "asns" })}>Receive</button>
-            <button className="btn secondary" style={{ minHeight: 56, flex: 1 }} onClick={() => setScreen({ name: "returns" })}>Return</button>
-            <button className="btn secondary" style={{ minHeight: 56, flex: 1 }} onClick={() => setScreen({ name: "ship" })}>Ship</button>
-            <button className="btn primary" style={{ flexBasis: "100%" }} onClick={claim}>Get next task</button>
+          <div className="scan-actions scan-grid">
+            <button className="btn secondary" onClick={() => setScreen({ name: "asns" })}><Truck size={22} weight="bold" aria-hidden="true" />Receive</button>
+            <button className="btn secondary" onClick={() => setScreen({ name: "returns" })}><ArrowUUpLeft size={22} weight="bold" aria-hidden="true" />Return</button>
+            <button className="btn secondary" onClick={() => setScreen({ name: "ship" })}><TruckTrailer size={22} weight="bold" aria-hidden="true" />Ship</button>
+            <button className="btn primary" onClick={claim}>Get next task<ArrowRight size={22} weight="bold" aria-hidden="true" /></button>
           </div>
         </>
       )}
@@ -235,7 +237,7 @@ export function ScannerApp({ wid, user }: { wid: string; user: string; role: str
           <header className="scan-head"><span className="label">Receive</span><span className="code">Open deliveries</span></header>
           <div className="scan-body">
             <AsnFinder asns={asns} onOpen={(id) => setScreen({ name: "asn", id })} />
-            {Object.keys(asns).length === 0 && <div className="empty">No open deliveries on this device.</div>}
+            {Object.keys(asns).length === 0 && <EmptyState>No open deliveries on this device.</EmptyState>}
             <ul className="scan-list">
               {Object.values(asns).map((a) => (
                 <li key={a.id}><button onClick={() => setScreen({ name: "asn", id: a.id })}>
@@ -243,7 +245,7 @@ export function ScannerApp({ wid, user }: { wid: string; user: string; role: str
               ))}
             </ul>
           </div>
-          <div className="scan-actions"><button className="btn secondary" style={{ minHeight: 56, flex: 1 }} onClick={() => setScreen({ name: "home" })}>Back</button></div>
+          <div className="scan-actions"><button className="btn secondary grow" onClick={() => setScreen({ name: "home" })}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button></div>
         </>
       )}
 
@@ -261,7 +263,7 @@ export function ScannerApp({ wid, user }: { wid: string; user: string; role: str
                 ))}
               </ul>
             </div>
-            <div className="scan-actions"><button className="btn secondary" style={{ minHeight: 56, flex: 1 }} onClick={() => setScreen({ name: "asns" })}>Back</button></div>
+            <div className="scan-actions"><button className="btn secondary grow" onClick={() => setScreen({ name: "asns" })}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button></div>
           </>
         );
       })()}
@@ -281,10 +283,10 @@ export function ScannerApp({ wid, user }: { wid: string; user: string; role: str
       )}
 
       <div className="scan-bar" role="status" aria-live="polite">
-        <span>{online ? <WifiHigh size={20} weight="bold" aria-hidden="true" /> : <WifiSlash size={20} weight="bold" aria-hidden="true" />} {online ? "Online" : "Offline"}</span>
+        <span className="status">{online ? <WifiHigh size={18} weight="bold" aria-hidden="true" /> : <WifiSlash size={18} weight="bold" aria-hidden="true" />} {online ? "Online" : "Offline"}</span>
         <span>{pending.length} unsynced</span>
         <span>{lastSync ? `Synced ${new Date(lastSync).toLocaleTimeString()}` : "Not synced yet"}</span>
-        <button className="btn small secondary" onClick={() => void refresh().then(runSync)} aria-label="Sync now"><ArrowsClockwise size={18} weight="bold" aria-hidden="true" /></button>
+        <button className="btn small secondary icon" onClick={() => void refresh().then(runSync)} aria-label="Sync now"><ArrowsClockwise size={18} weight="bold" aria-hidden="true" /></button>
       </div>
     </div>
   );
@@ -307,7 +309,7 @@ function AsnFinder({ asns, onOpen }: { asns: Record<string, ASN>; onOpen: (id: s
 function Gone({ onBack }: { onBack: () => void }) {
   return (
     <>
-      <div className="scan-body"><div className="empty">That item is no longer on this device.</div></div>
+      <div className="scan-body"><EmptyState>That item is no longer on this device.</EmptyState></div>
       <div className="scan-actions"><button className="btn primary" onClick={onBack}>Back</button></div>
     </>
   );
@@ -360,11 +362,11 @@ function useSteps(steps: Step[], cat?: Catalogue) {
 
 function StepList({ steps, done }: { steps: Step[]; done: Record<string, string> }) {
   return (
-    <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
+    <ol className="steps">
       {steps.map((s) => (
         <li key={s.id} className="step">
-          {s.id in done ? <CheckCircle size={26} weight="fill" color="var(--ok)" aria-label="done" /> : <span aria-label="to do" style={{ width: 26, height: 26, border: "3px solid var(--text-secondary)", borderRadius: "50%", display: "inline-block" }} />}
-          <span>{s.label}</span>{s.id in done && <span className="code" style={{ fontSize: 16 }}>{done[s.id]}</span>}
+          {s.id in done ? <CheckCircle size={26} weight="fill" color="var(--ok)" aria-label="done" /> : <span className="todo-dot" aria-label="to do" />}
+          <span>{s.label}</span>{s.id in done && <span className="code code-s">{done[s.id]}</span>}
         </li>
       ))}
     </ol>
@@ -395,7 +397,7 @@ function TaskScreen({ task, cat, onBack, onConfirm, onException }: {
       <header className="scan-head">
         <span className="label">{task.kind}{task.state === "exception" ? " (exception)" : ""}</span>
         <span className="code">{task.kind === "putaway" ? task.lpn || task.from_location : task.from_location || task.id}</span>
-        {task.sku && <span className="code" style={{ fontSize: 18 }}>{task.qty} x {task.sku}</span>}
+        {task.sku && <span className="code code-m">{task.qty} x {task.sku}</span>}
         {(task.kind === "putaway" || task.kind === "relocate") && task.to_location && <span className="scan-target">to {task.to_location}</span>}
       </header>
       <div className="scan-body">
@@ -408,7 +410,7 @@ function TaskScreen({ task, cat, onBack, onConfirm, onException }: {
         {task.kind === "pack" && <p>Pack every picked item for order <span className="code">{task.order_id}</span>, then confirm.</p>}
       </div>
       <div className="scan-actions">
-        <button className="btn text" style={{ color: "var(--text-secondary)" }} onClick={onBack}>Back</button>
+        <button className="btn text back" onClick={onBack}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button>
         <button className="btn text" disabled={busy} onClick={() => onException(task.kind === "pick" ? "short_pick: nothing found" : task.kind === "putaway" ? "cannot_putaway" : "skipped")}>
           {task.kind === "pick" ? "Short" : "Skip"}
         </button>
@@ -436,17 +438,17 @@ function ReceiveScreen({ line, cat, onBack, onConfirm }: {
       <header className="scan-head">
         <span className="label">Receive</span>
         <span className="code">{line.sku}</span>
-        <span className="code" style={{ fontSize: 18 }}>expected {line.expected_qty}, received {line.received_qty ?? 0}</span>
+        <span className="code code-m">expected {line.expected_qty}, received {line.received_qty ?? 0}</span>
       </header>
       <div className="scan-body">
         <StepList steps={steps} done={done} />
         {next && <ScanInput onScan={scan} label={next.label} />}
         <div className="scan-last" data-ok={last?.ok} role="status" aria-live="assertive">{last?.text}</div>
         {complete && <div><div className="label">Quantity received</div><Stepper value={qty} max={Math.max(remaining * 2, 1000)} onChange={setQty} /></div>}
-        {!dock && <div className="banner-error" role="alert">No receiving dock in the cached catalogue. Go online once to load it.</div>}
+        {!dock && <Banner>No receiving dock in the cached catalogue. Go online once to load it.</Banner>}
       </div>
       <div className="scan-actions">
-        <button className="btn text" style={{ color: "var(--text-secondary)" }} onClick={onBack}>Back</button>
+        <button className="btn text back" onClick={onBack}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button>
         <button className="btn primary" disabled={!complete || !dock || qty < 1 || busy}
           onClick={async () => { setBusy(true); try { await onConfirm({ qty, lpn: done["line-lpn"], location: dock }); } finally { setBusy(false); } }}>
           Confirm
@@ -487,21 +489,21 @@ function CountScreen({ task, sheet, cat, started, onStart, onBack, onSubmit }: {
       <header className="scan-head">
         <span className="label">{task.reason === "recount" ? "recount" : "count"}</span>
         <span className="code">{task.from_location}</span>
-        <span style={{ fontSize: 16 }}>Count what is on the shelf. Enter 0 for anything you cannot find.</span>
+        <span className="head-note">Count what is on the shelf. Enter 0 for anything you cannot find.</span>
       </header>
       <div className="scan-body">
-        {!sheet && <div className="banner-error" role="alert">The sheet for this count is not on this device. Scan each item you find.</div>}
+        {!sheet && <Banner>The sheet for this count is not on this device. Scan each item you find.</Banner>}
         <ul className="scan-list">
           {rows.map((r, i) => (
             <li key={`${r.sku}|${r.lot}|${r.lpn}|${i}`} className="panel">
-              <div className="code" style={{ fontSize: 20 }}>{r.sku}</div>
-              <div className="muted" style={{ fontSize: 14, fontFamily: "var(--font-code)" }}>{r.lot || "lot not known"}{r.lpn ? ` | ${r.lpn}` : ""}{r.extra ? " | added" : ""}</div>
-              <div className="row" style={{ marginTop: 8 }}>
+              <div className="code code-l">{r.sku}</div>
+              <div className="sub code">{r.lot || "lot not known"}{r.lpn ? ` | ${r.lpn}` : ""}{r.extra ? " | added" : ""}</div>
+              <div className="row">
                 <label className="label" htmlFor={`q-${i}`}>Counted</label>
-                <input id={`q-${i}`} inputMode="numeric" className="scan-input" style={{ width: 120, fontSize: 28 }} value={r.counted}
+                <input id={`q-${i}`} inputMode="numeric" className="scan-input qty" value={r.counted}
                   onChange={(e) => set(i, { counted: e.target.value.replace(/\D/g, "") })} />
                 <label className="label" htmlFor={`d-${i}`}>Damaged</label>
-                <input id={`d-${i}`} inputMode="numeric" className="scan-input" style={{ width: 100, fontSize: 28 }} value={r.damaged}
+                <input id={`d-${i}`} inputMode="numeric" className="scan-input qty qty-sm" value={r.damaged}
                   onChange={(e) => set(i, { damaged: e.target.value.replace(/\D/g, "") })} />
               </div>
             </li>
@@ -517,7 +519,7 @@ function CountScreen({ task, sheet, cat, started, onStart, onBack, onSubmit }: {
         <div className="scan-last" data-ok={msg?.ok} role="status" aria-live="assertive">{msg?.text}</div>
       </div>
       <div className="scan-actions">
-        <button className="btn text" style={{ color: "var(--text-secondary)" }} onClick={onBack}>Back</button>
+        <button className="btn text back" onClick={onBack}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button>
         <button className="btn primary" disabled={!ready || busy} onClick={submit}>Submit count</button>
       </div>
     </>
@@ -542,21 +544,21 @@ function DispositionScreen({ task, onBack, onDecide }: { task: Task; onBack: () 
       <header className="scan-head">
         <span className="label">Returned item</span>
         <span className="code">{task.qty} x {task.sku}</span>
-        <span style={{ fontSize: 16 }}>Now in <span className="code">{task.from_location}</span>. Decide what happens to it.</span>
+        <span className="head-note">Now in <span className="code">{task.from_location}</span>. Decide what happens to it.</span>
       </header>
       <div className="scan-body">
         <ul className="scan-list">
           {options.map((o) => (
             <li key={o.id}>
-              <button disabled={busy} onClick={() => pick(o.id)} style={suggested === o.id ? { borderColor: "var(--accent)", borderWidth: 4 } : undefined}>
-                <strong style={{ fontSize: 22 }}>{o.label}</strong>{suggested === o.id ? <span className="label"> suggested</span> : null}
-                <div className="muted" style={{ fontSize: 15 }}>{o.hint}</div>
+              <button disabled={busy} onClick={() => pick(o.id)} data-suggested={suggested === o.id ? "true" : undefined}>
+                <strong className="option-title">{o.label}</strong>{suggested === o.id ? <span className="label"> suggested</span> : null}
+                <div className="muted">{o.hint}</div>
               </button>
             </li>
           ))}
         </ul>
       </div>
-      <div className="scan-actions"><button className="btn text" style={{ color: "var(--text-secondary)" }} onClick={onBack}>Back</button></div>
+      <div className="scan-actions"><button className="btn text back" onClick={onBack}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button></div>
     </>
   );
 }
@@ -612,21 +614,21 @@ function ReturnScreen({ expected, cat, onBack, onConfirm }: {
             {lines.length > 0 && (
               <ul className="scan-list">
                 {lines.map((l, i) => (
-                  <li key={i} className="panel"><span className="code">{l.qty} x {l.sku}</span> <span className="label">{l.condition}</span>
-                    <button className="btn small secondary" style={{ marginLeft: 12 }} onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}>Remove</button></li>
+                  <li key={i} className="panel scan-line"><span className="code">{l.qty} x {l.sku}</span> <span className="tag">{l.condition}</span>
+                    <button className="btn small secondary" onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}>Remove</button></li>
                 ))}
               </ul>
             )}
             {!sku ? <ScanInput label={lines.length ? "Scan another product, or confirm" : "Scan a product from the parcel"} onScan={scanSku} /> : (
               <>
-                <div className="code" style={{ fontSize: 24 }}>{sku}</div>
+                <div className="code code-l">{sku}</div>
                 <div className="label">Quantity</div>
                 <Stepper value={qty} max={999} onChange={setQty} />
                 <div className="label">Condition</div>
-                <div className="row">
-                  <button className="btn" style={{ minHeight: 56, flex: 1 }} onClick={() => addLine("good")}>Good</button>
-                  <button className="btn secondary" style={{ minHeight: 56, flex: 1 }} onClick={() => addLine("damaged")}>Damaged</button>
-                  <button className="btn secondary" style={{ minHeight: 56, flex: 1 }} onClick={() => addLine("unknown")}>Not sure</button>
+                <div className="scan-choice">
+                  <button className="btn" onClick={() => addLine("good")}>Good</button>
+                  <button className="btn secondary" onClick={() => addLine("damaged")}>Damaged</button>
+                  <button className="btn secondary" onClick={() => addLine("unknown")}>Not sure</button>
                 </div>
               </>
             )}
@@ -635,7 +637,7 @@ function ReturnScreen({ expected, cat, onBack, onConfirm }: {
         <div className="scan-last" data-ok={msg?.ok} role="status" aria-live="assertive">{msg?.text}</div>
       </div>
       <div className="scan-actions">
-        <button className="btn text" style={{ color: "var(--text-secondary)" }} onClick={onBack}>Back</button>
+        <button className="btn text back" onClick={onBack}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button>
         <button className="btn primary" disabled={!tracking || lines.length === 0 || busy}
           onClick={async () => { setBusy(true); try { await onConfirm({ tracking: tracking!, lines }); } finally { setBusy(false); } }}>
           Confirm return
@@ -662,7 +664,7 @@ function ShipScreen({ cat, onBack, onConfirm }: { cat?: Catalogue; onBack: () =>
         <div className="scan-last" data-ok={last?.ok} role="status" aria-live="assertive">{last?.text}</div>
       </div>
       <div className="scan-actions">
-        <button className="btn text" style={{ color: "var(--text-secondary)" }} onClick={onBack}>Back</button>
+        <button className="btn text back" onClick={onBack}><ArrowLeft size={22} weight="bold" aria-hidden="true" />Back</button>
         <button className="btn primary" disabled={!complete || busy}
           onClick={async () => { setBusy(true); try { await onConfirm({ order_id: done.order, tracking: done.tracking, carrier: done.carrier }); } finally { setBusy(false); } }}>
           Confirm
