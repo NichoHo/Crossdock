@@ -156,7 +156,7 @@ details.panel > summary { cursor: pointer; font-weight: 600; min-height: 24px; }
 .secret-value { font-size: 15px; overflow-wrap: anywhere; word-break: break-all; user-select: all; }
 
 /* Tables */
-.table-wrap { overflow: auto; max-height: calc(100dvh - 200px); background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-lg); }
+.table-wrap { position: relative; overflow: auto; max-height: calc(100dvh - 200px); background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-lg); }
 table { width: 100%; border-collapse: separate; border-spacing: 0; }
 th {
   position: sticky; top: 0; z-index: 1; height: 36px; padding: 0 12px; text-align: left; white-space: nowrap;
@@ -165,6 +165,8 @@ th {
 }
 th .th-in { display: inline-flex; align-items: center; gap: 6px; }
 td { height: 40px; padding: 6px 12px; vertical-align: middle; border-bottom: 1px solid var(--border); }
+td.code { white-space: nowrap; }
+td.code.break { white-space: normal; }
 th + th, td + td { border-left: 1px solid var(--border); }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr:hover td { background: var(--bg-hover); }
@@ -342,6 +344,9 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 .scan-body { flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 16px; }
 .scan-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 16px; font-size: 14px; font-weight: 600; background: var(--bg); border-top: 1px solid var(--border); }
 .scan-bar .status { display: inline-flex; align-items: center; gap: 6px; }
+.scan-bar { flex-wrap: wrap; }
+.scan-bar > span { white-space: nowrap; }
+.scan-head .btn { align-self: flex-start; }
 .scan-actions { display: flex; align-items: center; gap: 12px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--border); }
 .scan-actions .btn.primary { flex: 1; }
 .scan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -397,7 +402,8 @@ html[data-flash="error"]::after { border-color: var(--stop); }
   .sidebar-foot { flex-direction: row; align-items: center; margin: 0; padding: 0; border: 0; }
   .user-row { flex: none; }
   .split { grid-template-columns: 1fr; }
-  .page-head { padding: 0 16px; }
+  .page-head { height: auto; min-height: 48px; flex-wrap: wrap; padding: 6px 16px; }
+  .page-head .actions { flex-wrap: wrap; }
   .page-body { padding: 12px 16px 24px; }
   .ageing { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
