@@ -188,11 +188,14 @@ type harness struct {
 	db  *sql.DB
 	w   wmstest.World
 	svc *delivery.Service
-	bus *delivery.MemBus
+	bus delivery.Bus
 	ctx context.Context
 }
 
-func newHarness(t *testing.T) *harness {
+func newHarness(t *testing.T) *harness { return newHarnessBus(t, delivery.NewMemBus()) }
+
+// newHarnessBus is newHarness over a caller-supplied bus (chaos tests wrap one).
+func newHarnessBus(t *testing.T, bus delivery.Bus) *harness {
 	t.Helper()
 	db := testdb.Open(t)
 	var k [32]byte
@@ -203,7 +206,7 @@ func newHarness(t *testing.T) *harness {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	h := &harness{t: t, db: db, w: wmstest.Seed(t, db, 1), svc: delivery.NewService(db, enc, true), bus: delivery.NewMemBus(), ctx: ctx}
+	h := &harness{t: t, db: db, w: wmstest.Seed(t, db, 1), svc: delivery.NewService(db, enc, true), bus: bus, ctx: ctx}
 	go func() { _ = delivery.RunFanout(ctx, db, h.bus) }()
 	return h
 }

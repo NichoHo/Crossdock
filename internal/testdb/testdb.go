@@ -89,6 +89,29 @@ func Open(t *testing.T) *sql.DB {
 	return db
 }
 
+// Chaos opens a second pool on db's schema, tagged with its own application_name,
+// and returns it with a kill function that terminates one random backend of that pool
+// (what a PostgreSQL crash or a network cut looks like to the client). Backends of
+// other tests and of db itself are untouched.
+func Chaos(t *testing.T, db *sql.DB) (victim *sql.DB, kill func() int) {
+	t.Helper()
+	var schema string
+	if err := db.QueryRow(`SELECT current_schema()`).Scan(&schema); err != nil {
+		t.Fatalf("testdb: current_schema: %v", err)
+	}
+	app := fmt.Sprintf("chaos_%08x", rand.Uint32())
+	victim, err := sql.Open("postgres", addSearchPath(os.Getenv("CROSSDOCK_TEST_DB_URL"), schema)+"&application_name="+app)
+	if err != nil {
+		t.Fatalf("testdb: open chaos pool: %v", err)
+	}
+	t.Cleanup(func() { victim.Close() })
+	return victim, func() int {
+		var n int
+		_ = db.QueryRow(`SELECT count(pg_terminate_backend(pid)) FROM (SELECT pid FROM pg_stat_activity WHERE application_name = $1 ORDER BY random() LIMIT 1) b`, app).Scan(&n)
+		return n
+	}
+}
+
 // schemaForTest generates a deterministic but unique schema name for the test.
 func schemaForTest(t *testing.T) string {
 	t.Helper()
