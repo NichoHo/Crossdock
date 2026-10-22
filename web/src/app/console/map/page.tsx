@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { load, requireCtx, wpath } from "@/lib/context";
 import { upstream } from "@/lib/upstream";
+import { Banner } from "@/components/Banner";
+import { EmptyState } from "@/components/EmptyState";
+import { PageHeader } from "@/components/PageHeader";
+import { Th } from "@/components/Table";
+import { Tabs } from "@/components/Tabs";
 import type { MapCell, Proposal } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Floor map" };
@@ -43,71 +48,78 @@ export default async function MapPage({ searchParams }: { searchParams: Promise<
 
   return (
     <>
-      <h1>Floor map</h1>
-      <p className="muted" style={{ marginTop: 0 }}>
-        Picks per location over the last {days} days. Aisles run left to right; bays run down from the dock at the top left. Darker cells are picked more.
-      </p>
-      <nav className="row" aria-label="Period" style={{ marginBottom: 12 }}>
-        {DAYS.map((d) => (
-          <Link key={d} className={`btn small ${d === days ? "" : "secondary"}`} href={`/console/map?days=${d}${q.proposal ? `&proposal=${q.proposal}` : ""}`}>{d} days</Link>
-        ))}
-        {q.proposal && <Link className="btn small secondary" href={`/console/map?days=${days}`}>Hide proposal</Link>}
-      </nav>
-      {map.error && <div className="banner-error" role="alert">{map.error}</div>}
-      {prop?.error && <div className="banner-error" role="alert">{prop.error}</div>}
-
-      {map.data && (
-        <div className="panel" style={{ overflow: "auto", padding: 8 }}>
-          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Warehouse floor plan with pick frequency per location" style={{ display: "block", maxWidth: "100%" }}>
-            {Array.from({ length: maxAisle + 1 }, (_, a) => (
-              <text key={a} x={PAD + a * CELL_W + CELL_W / 2} y={PAD - 12} textAnchor="middle" className="map-label">{a === 0 ? "Dock" : `A${String(a).padStart(2, "0")}`}</text>
-            ))}
-            {all.map((c) => {
-              const key = `${c.aisle}:${c.bay}`;
-              const x = PAD + c.aisle * CELL_W, y = PAD + c.bay * CELL_H;
-              const lvl = level(c.picks);
-              const bulk = c.zones.has("bulk") && !c.zones.has("pick_face");
-              const moveFrom = from.has(key), moveTo = to.has(key);
-              return (
-                <g key={key}>
-                  <title>{`${c.codes.length} location${c.codes.length === 1 ? "" : "s"} in aisle ${c.aisle}, bay ${c.bay}: ${c.picks} picks, ${c.units} units on hand${moveFrom ? " (stock moves out)" : ""}${moveTo ? " (stock moves in)" : ""}`}</title>
-                  <rect x={x + 1} y={y + 1} width={CELL_W - 2} height={CELL_H - 2} rx={3} className={`heat h${lvl}`}
-                    strokeDasharray={bulk ? "4 3" : undefined}
-                    style={moveTo ? { stroke: "var(--ok)", strokeWidth: 4 } : moveFrom ? { stroke: "var(--stop)", strokeWidth: 3, strokeDasharray: "2 3" } : undefined} />
-                  {c.picks > 0 && <text x={x + CELL_W / 2} y={y + CELL_H / 2 + 4} textAnchor="middle" className={`map-n ${lvl >= 3 ? "on-dark" : ""}`}>{c.picks}</text>}
-                </g>
-              );
-            })}
-            {Array.from({ length: Math.floor(maxBay / 5) + 1 }, (_, i) => i * 5).map((b) => (
-              <text key={b} x={PAD - 8} y={PAD + b * CELL_H + CELL_H / 2 + 4} textAnchor="end" className="map-label">{b}</text>
-            ))}
-          </svg>
+      <PageHeader section="map" title="Floor map" />
+      <div className="page-body">
+        <p className="page-intro">
+          Picks per location over the last {days} days. Aisles run left to right; bays run down from the dock at the top left. Darker cells are picked more.
+        </p>
+        <div className="toolbar">
+          <Tabs
+            label="Period"
+            items={DAYS.map((d) => ({ href: `/console/map?days=${d}${q.proposal ? `&proposal=${q.proposal}` : ""}`, label: `${d} days`, active: d === days }))}
+          />
+          {q.proposal && (
+            <>
+              <span className="spacer" />
+              <Link className="btn secondary small" href={`/console/map?days=${days}`}>Hide proposal</Link>
+            </>
+          )}
         </div>
-      )}
+        {map.error && <Banner>{map.error}</Banner>}
+        {prop?.error && <Banner>{prop.error}</Banner>}
 
-      <ul className="row" aria-label="Legend" style={{ listStyle: "none", padding: 0, margin: "12px 0" }}>
-        {[0, 1, 2, 3, 4].map((l) => (
-          <li key={l} className="row" style={{ gap: 6 }}>
-            <svg width="28" height="16" aria-hidden="true"><rect x="1" y="1" width="26" height="14" rx="3" className={`heat h${l}`} /></svg>
-            {l === 0 ? "none" : `${Math.round(((l - 1) / 4) * maxPicks) + 1} to ${Math.round((l / 4) * maxPicks)}`}
-          </li>
-        ))}
-        <li className="row" style={{ gap: 6 }}><svg width="28" height="16" aria-hidden="true"><rect x="1" y="1" width="26" height="14" rx="3" className="heat h0" strokeDasharray="4 3" /></svg>bulk storage (dashed)</li>
-        {prop?.data && <>
-          <li className="row" style={{ gap: 6 }}><svg width="28" height="16" aria-hidden="true"><rect x="2" y="2" width="24" height="12" rx="3" className="heat h0" style={{ stroke: "var(--stop)", strokeWidth: 3, strokeDasharray: "2 3" }} /></svg>stock moves out</li>
-          <li className="row" style={{ gap: 6 }}><svg width="28" height="16" aria-hidden="true"><rect x="2" y="2" width="24" height="12" rx="3" className="heat h0" style={{ stroke: "var(--ok)", strokeWidth: 4 }} /></svg>stock moves in</li>
-        </>}
-      </ul>
+        {map.data && (
+          <div className="panel map-wrap">
+            <svg className="map-svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Warehouse floor plan with pick frequency per location">
+              {Array.from({ length: maxAisle + 1 }, (_, a) => (
+                <text key={a} x={PAD + a * CELL_W + CELL_W / 2} y={PAD - 12} textAnchor="middle" className="map-label">{a === 0 ? "Dock" : `A${String(a).padStart(2, "0")}`}</text>
+              ))}
+              {all.map((c) => {
+                const key = `${c.aisle}:${c.bay}`;
+                const x = PAD + c.aisle * CELL_W, y = PAD + c.bay * CELL_H;
+                const lvl = level(c.picks);
+                const bulk = c.zones.has("bulk") && !c.zones.has("pick_face");
+                const moveFrom = from.has(key), moveTo = to.has(key);
+                const move = moveTo ? " move-in" : moveFrom ? " move-out" : "";
+                return (
+                  <g key={key}>
+                    <title>{`${c.codes.length} location${c.codes.length === 1 ? "" : "s"} in aisle ${c.aisle}, bay ${c.bay}: ${c.picks} picks, ${c.units} units on hand${moveFrom ? " (stock moves out)" : ""}${moveTo ? " (stock moves in)" : ""}`}</title>
+                    <rect x={x + 1} y={y + 1} width={CELL_W - 2} height={CELL_H - 2} rx={3} className={`heat h${lvl}${bulk ? " bulk" : ""}${move}`} />
+                    {c.picks > 0 && <text x={x + CELL_W / 2} y={y + CELL_H / 2 + 4} textAnchor="middle" className={`map-n ${lvl >= 3 ? "on-dark" : ""}`}>{c.picks}</text>}
+                  </g>
+                );
+              })}
+              {Array.from({ length: Math.floor(maxBay / 5) + 1 }, (_, i) => i * 5).map((b) => (
+                <text key={b} x={PAD - 8} y={PAD + b * CELL_H + CELL_H / 2 + 4} textAnchor="end" className="map-label">{b}</text>
+              ))}
+            </svg>
+          </div>
+        )}
 
-      <h2>Busiest locations</h2>
-      {hottest.length === 0 ? <div className="empty">No picks in this period.</div> : (
-        <div className="table-wrap" style={{ maxWidth: 520 }}>
-          <table>
-            <thead><tr><th>Location</th><th>Zone</th><th className="num">Picks</th></tr></thead>
-            <tbody>{hottest.map((c) => <tr key={c.code}><td className="code">{c.code}</td><td>{c.zone.replaceAll("_", " ")}</td><td className="num">{c.picks}</td></tr>)}</tbody>
-          </table>
-        </div>
-      )}
+        <ul className="legend" aria-label="Legend">
+          {[0, 1, 2, 3, 4].map((l) => (
+            <li key={l}>
+              <svg width="28" height="16" aria-hidden="true"><rect x="1" y="1" width="26" height="14" rx="3" className={`heat h${l}`} /></svg>
+              {l === 0 ? "none" : `${Math.round(((l - 1) / 4) * maxPicks) + 1} to ${Math.round((l / 4) * maxPicks)}`}
+            </li>
+          ))}
+          <li><svg width="28" height="16" aria-hidden="true"><rect x="1" y="1" width="26" height="14" rx="3" className="heat h0 bulk" /></svg>bulk storage (dashed)</li>
+          {prop?.data && <>
+            <li><svg width="28" height="16" aria-hidden="true"><rect x="2" y="2" width="24" height="12" rx="3" className="heat h0 move-out" /></svg>stock moves out</li>
+            <li><svg width="28" height="16" aria-hidden="true"><rect x="2" y="2" width="24" height="12" rx="3" className="heat h0 move-in" /></svg>stock moves in</li>
+          </>}
+        </ul>
+
+        <h2>Busiest locations</h2>
+        {hottest.length === 0 ? <EmptyState>No picks in this period.</EmptyState> : (
+          <div className="table-wrap narrow">
+            <table>
+              <thead><tr><Th type="location">Location</Th><Th type="location">Zone</Th><Th type="num">Picks</Th></tr></thead>
+              <tbody>{hottest.map((c) => <tr key={c.code}><td className="code">{c.code}</td><td><span className="tag">{c.zone.replaceAll("_", " ")}</span></td><td className="num">{c.picks}</td></tr>)}</tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </>
   );
 }
