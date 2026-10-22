@@ -5,8 +5,8 @@
   "scope": "/scan",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#121514",
-  "theme_color": "#0b5c8e",
+  "background_color": "#111113",
+  "theme_color": "#2563EB",
   "icons": [
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]

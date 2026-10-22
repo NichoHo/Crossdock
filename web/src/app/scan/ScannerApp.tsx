@@ -363,7 +363,7 @@ function StepList({ steps, done }: { steps: Step[]; done: Record<string, string>
     <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
       {steps.map((s) => (
         <li key={s.id} className="step">
-          {s.id in done ? <CheckCircle size={26} weight="fill" color="var(--ok)" aria-label="done" /> : <span aria-label="to do" style={{ width: 26, height: 26, border: "3px solid var(--ink-muted)", borderRadius: "50%", display: "inline-block" }} />}
+          {s.id in done ? <CheckCircle size={26} weight="fill" color="var(--ok)" aria-label="done" /> : <span aria-label="to do" style={{ width: 26, height: 26, border: "3px solid var(--text-secondary)", borderRadius: "50%", display: "inline-block" }} />}
           <span>{s.label}</span>{s.id in done && <span className="code" style={{ fontSize: 16 }}>{done[s.id]}</span>}
         </li>
       ))}
@@ -408,7 +408,7 @@ function TaskScreen({ task, cat, onBack, onConfirm, onException }: {
         {task.kind === "pack" && <p>Pack every picked item for order <span className="code">{task.order_id}</span>, then confirm.</p>}
       </div>
       <div className="scan-actions">
-        <button className="btn text" style={{ color: "var(--ink-muted)" }} onClick={onBack}>Back</button>
+        <button className="btn text" style={{ color: "var(--text-secondary)" }} onClick={onBack}>Back</button>
         <button className="btn text" disabled={busy} onClick={() => onException(task.kind === "pick" ? "short_pick: nothing found" : task.kind === "putaway" ? "cannot_putaway" : "skipped")}>
           {task.kind === "pick" ? "Short" : "Skip"}
         </button>
@@ -446,7 +446,7 @@ function ReceiveScreen({ line, cat, onBack, onConfirm }: {
         {!dock && <div className="banner-error" role="alert">No receiving dock in the cached catalogue. Go online once to load it.</div>}
       </div>
       <div className="scan-actions">
-        <button className="btn text" style={{ color: "var(--ink-muted)" }} onClick={onBack}>Back</button>
+        <button className="btn text" style={{ color: "var(--text-secondary)" }} onClick={onBack}>Back</button>
         <button className="btn primary" disabled={!complete || !dock || qty < 1 || busy}
           onClick={async () => { setBusy(true); try { await onConfirm({ qty, lpn: done["line-lpn"], location: dock }); } finally { setBusy(false); } }}>
           Confirm
@@ -517,7 +517,7 @@ function CountScreen({ task, sheet, cat, started, onStart, onBack, onSubmit }: {
         <div className="scan-last" data-ok={msg?.ok} role="status" aria-live="assertive">{msg?.text}</div>
       </div>
       <div className="scan-actions">
-        <button className="btn text" style={{ color: "var(--ink-muted)" }} onClick={onBack}>Back</button>
+        <button className="btn text" style={{ color: "var(--text-secondary)" }} onClick={onBack}>Back</button>
         <button className="btn primary" disabled={!ready || busy} onClick={submit}>Submit count</button>
       </div>
     </>
@@ -548,7 +548,7 @@ function DispositionScreen({ task, onBack, onDecide }: { task: Task; onBack: () 
         <ul className="scan-list">
           {options.map((o) => (
             <li key={o.id}>
-              <button disabled={busy} onClick={() => pick(o.id)} style={suggested === o.id ? { borderColor: "var(--action)", borderWidth: 4 } : undefined}>
+              <button disabled={busy} onClick={() => pick(o.id)} style={suggested === o.id ? { borderColor: "var(--accent)", borderWidth: 4 } : undefined}>
                 <strong style={{ fontSize: 22 }}>{o.label}</strong>{suggested === o.id ? <span className="label"> suggested</span> : null}
                 <div className="muted" style={{ fontSize: 15 }}>{o.hint}</div>
               </button>
@@ -556,7 +556,7 @@ function DispositionScreen({ task, onBack, onDecide }: { task: Task; onBack: () 
           ))}
         </ul>
       </div>
-      <div className="scan-actions"><button className="btn text" style={{ color: "var(--ink-muted)" }} onClick={onBack}>Back</button></div>
+      <div className="scan-actions"><button className="btn text" style={{ color: "var(--text-secondary)" }} onClick={onBack}>Back</button></div>
     </>
   );
 }
@@ -635,7 +635,7 @@ function ReturnScreen({ expected, cat, onBack, onConfirm }: {
         <div className="scan-last" data-ok={msg?.ok} role="status" aria-live="assertive">{msg?.text}</div>
       </div>
       <div className="scan-actions">
-        <button className="btn text" style={{ color: "var(--ink-muted)" }} onClick={onBack}>Back</button>
+        <button className="btn text" style={{ color: "var(--text-secondary)" }} onClick={onBack}>Back</button>
         <button className="btn primary" disabled={!tracking || lines.length === 0 || busy}
           onClick={async () => { setBusy(true); try { await onConfirm({ tracking: tracking!, lines }); } finally { setBusy(false); } }}>
           Confirm return
@@ -662,7 +662,7 @@ function ShipScreen({ cat, onBack, onConfirm }: { cat?: Catalogue; onBack: () =>
         <div className="scan-last" data-ok={last?.ok} role="status" aria-live="assertive">{last?.text}</div>
       </div>
       <div className="scan-actions">
-        <button className="btn text" style={{ color: "var(--ink-muted)" }} onClick={onBack}>Back</button>
+        <button className="btn text" style={{ color: "var(--text-secondary)" }} onClick={onBack}>Back</button>
         <button className="btn primary" disabled={!complete || busy}
           onClick={async () => { setBusy(true); try { await onConfirm({ order_id: done.order, tracking: done.tracking, carrier: done.carrier }); } finally { setBusy(false); } }}>
           Confirm

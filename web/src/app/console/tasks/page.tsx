@@ -34,7 +34,7 @@ export default async function TasksPage() {
               <h2 id={`col-${c.state}`}>{c.title} ({items.length}{results[i].data?.next_cursor ? "+" : ""})</h2>
               {items.length === 0 && <div className="empty">Nothing here.</div>}
               {items.map((t) => (
-                <details key={t.id} style={{ borderTop: "1px solid var(--line)", padding: "8px 0" }}>
+                <details key={t.id} style={{ borderTop: "1px solid var(--border)", padding: "8px 0" }}>
                   <summary>
                     <StatusChip state={t.state} /> <span className="label">{t.kind}</span>{" "}
                     <span className="code">{t.from_location || t.sku || t.id}</span>
@@ -54,7 +54,7 @@ export default async function TasksPage() {
                       <div className="row">
                         <label className="sr-only" htmlFor={`op-${t.id}`}>Operator</label>
                         <input id={`op-${t.id}`} name="operator" placeholder="Operator name…" autoComplete="off" spellCheck={false} required
-                          style={{ minHeight: 40, padding: "0 10px", border: "2px solid var(--ink-muted)", borderRadius: 6, background: "var(--surface-raised)", color: "var(--ink)" }} />
+                          style={{ minHeight: 40, padding: "0 10px", border: "2px solid var(--text-secondary)", borderRadius: 6, background: "var(--bg)", color: "var(--text)" }} />
                         <SubmitButton className="btn small">Assign</SubmitButton>
                       </div>
                     </ActionForm>

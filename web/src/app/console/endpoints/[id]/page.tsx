@@ -63,7 +63,7 @@ export default async function EndpointPage({
                 <input type="hidden" name="mode" value="dead" />
                 <SubmitButton className="btn secondary">Replay all dead letters</SubmitButton>
               </ActionForm>
-              <hr style={{ border: 0, borderTop: "1px solid var(--line)", margin: "12px 0" }} />
+              <hr style={{ border: 0, borderTop: "1px solid var(--border)", margin: "12px 0" }} />
               <ActionForm action={replayDeliveries}>
                 <input type="hidden" name="id" value={e.id} />
                 <input type="hidden" name="mode" value="event" />
@@ -73,7 +73,7 @@ export default async function EndpointPage({
                 </div>
                 <SubmitButton className="btn secondary">Replay event</SubmitButton>
               </ActionForm>
-              <hr style={{ border: 0, borderTop: "1px solid var(--line)", margin: "12px 0" }} />
+              <hr style={{ border: 0, borderTop: "1px solid var(--border)", margin: "12px 0" }} />
               <ActionForm action={replayDeliveries}>
                 <input type="hidden" name="id" value={e.id} />
                 <input type="hidden" name="mode" value="range" />

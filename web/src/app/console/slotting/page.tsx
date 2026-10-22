@@ -39,7 +39,7 @@ export default async function SlottingPage({ searchParams }: { searchParams: Pro
               {items.map((x) => (
                 <li key={x.id}>
                   <Link href={`/console/slotting?id=${x.id}`} style={{ textDecoration: "none" }}>
-                    <div className="panel" style={{ padding: 10, borderColor: x.id === p?.id ? "var(--action)" : undefined, borderWidth: x.id === p?.id ? 3 : 1 }}>
+                    <div className="panel" style={{ padding: 10, borderColor: x.id === p?.id ? "var(--accent)" : undefined, borderWidth: x.id === p?.id ? 3 : 1 }}>
                       <StatusChip state={x.state === "rejected" ? "rejected_proposal" : x.state} label={x.state} />{" "}
                       <span className="code" style={{ fontSize: 13 }}>{x.id}</span>
                       <div className="muted" style={{ fontSize: 13 }}>{x.created_at.replace("T", " ").slice(0, 16)}, {x.move_count} moves, {x.solver}</div>
@@ -100,7 +100,7 @@ export default async function SlottingPage({ searchParams }: { searchParams: Pro
                     <input type="hidden" name="id" value={p.id} />
                     <div className="row">
                       <label className="sr-only" htmlFor="note">Reason</label>
-                      <input id="note" name="note" placeholder="Reason (optional)…" autoComplete="off" style={{ minHeight: 48, padding: "0 10px", border: "2px solid var(--ink-muted)", borderRadius: 6, background: "var(--surface-raised)", color: "var(--ink)" }} />
+                      <input id="note" name="note" placeholder="Reason (optional)…" autoComplete="off" style={{ minHeight: 48, padding: "0 10px", border: "2px solid var(--text-secondary)", borderRadius: 6, background: "var(--bg)", color: "var(--text)" }} />
                       <SubmitButton className="btn danger">Reject</SubmitButton>
                     </div>
                   </ActionForm>
