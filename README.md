@@ -187,6 +187,12 @@ Tier T2 (internal team, synthetic data). The control list, how each was checked,
 
 When load testing, start the API with `CROSSDOCK_RATE_LIMIT_USER=0` or the load generator, which acts as one user, will be limited.
 
+## Docs
+
+The docs book (glossary, movement and event catalogues, webhook signing guide with verification code in Node, Python and Go, API notes, runbook, security) is in `docs/`. Build it with `mdbook build docs` and open `docs/book/index.html`. The verification snippets are checked in CI against a published test vector.
+
+Not done: rendered design-system components, and running the API examples against a live service in CI.
+
 ## Tests
 
 ```bash

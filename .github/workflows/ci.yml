@@ -159,6 +159,34 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  # The docs book builds, and the webhook verification snippets in it still pass the
+  # published test vector (the Go test TestDocsSigningVector checks the vector against the server).
+  docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Webhook verification snippets
+        run: |
+          node docs/snippets/verify.mjs
+          python docs/snippets/verify.py
+          go run docs/snippets/verify.go
+      - uses: peaceiris/actions-mdbook@v2
+        with:
+          mdbook-version: "0.4.52"
+      - name: Build the book
+        run: mdbook build docs
+
   # Known-vulnerability scans for all three ecosystems (spec 17).
   dependency-scan:
     name: Dependency scan

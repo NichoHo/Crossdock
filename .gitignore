@@ -56,3 +56,4 @@ __pycache__/
 # Deployment
 deploy/.env
 backups/
+docs/book/

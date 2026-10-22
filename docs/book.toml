@@ -1,0 +1,9 @@
+[book]
+title = "Crossdock"
+description = "A warehouse platform where the number in the system equals the number on the shelf."
+src = "."
+language = "en"
+
+[build]
+build-dir = "book"
+create-missing = false

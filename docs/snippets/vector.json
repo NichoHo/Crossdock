@@ -1,0 +1,7 @@
+{
+  "secret": "whsec_test_0123456789abcdef",
+  "timestamp": "1767268800",
+  "signature": "v1=d92fb3173838f5e77df3fd74dbf941a78fb68c3a7bf0ac34ea229a23cafd13ca",
+  "body": "{\"id\":\"evt_42\",\"type\":\"shipment.dispatched\",\"occurred_at\":\"2026-01-01T12:00:00Z\",\"sequence\":42,\"warehouse_id\":\"wh-demo\",\"idempotency_key\":\"evt_42\",\"data\":{\"shipment_id\":\"shp-1\",\"order_id\":\"so-1\",\"carrier\":\"JNT\",\"tracking\":\"JNT0001\",\"cod_amount_minor\":99900}}",
+  "now": 1767268830
+}
