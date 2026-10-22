@@ -21,8 +21,8 @@ This page lists each control from the spec (section 17), whether it is in place,
 | Rate limits per user and per API token | `internal/api/ratelimit.go` | Test: a burst gets 429 with `Retry-After`; a second user is not affected. Default 50 requests per second per user, 10 per external token (`CROSSDOCK_RATE_LIMIT_USER`, `CROSSDOCK_RATE_LIMIT_SYSTEM`). |
 | Sign-in throttle | `web/src/lib/loginlimit.ts` | Unit tests. Live: five wrong passwords, then the correct password is refused for ten minutes. |
 | Session cookie is httpOnly, secure, same-site; nothing session-related is in `localStorage` | `web/src/lib/session.ts` | Cookie flags seen on the live login response |
-| A removed user or a changed role takes effect on the next request | `getSession()` checks the current user list each time | Code path only; no automated test |
-| Offline queue cleared on sign-out; unsynced work asks first | `web/src/components/SignOutButton.tsx` | Sign-out clicked in a real browser through the proxy. The queue-clearing path itself has no automated test. |
+| A removed user or a changed role takes effect on the next request | `getSession()` checks the current user list each time | `resolveSession` unit tests: removed user, changed role, expired, tampered and missing cookies (`web/src/lib/session.test.ts`) |
+| Offline queue cleared on sign-out; unsynced work asks first | `web/src/components/SignOutButton.tsx` | Sign-out clicked in a real browser through the proxy. `leaveWithQueue` unit tests: queue cleared, asks first when work is unsynced, stays signed in if declined (`web/src/lib/offline.test.ts`). |
 | Offline commands re-checked on sync | `/commands` runs the same auth and ownership checks | Offline sync load test: a command for another scanner's task is rejected with a reason |
 | Security headers: HSTS, CSP with `frame-ancestors 'none'`, nosniff, referrer policy, permissions policy | `deploy/Caddyfile` | `curl -I` through the proxy. A browser visited the console, slotting, map, settlement and scanner pages with no CSP violation. |
 | HTTP redirects to HTTPS | Caddy default | `curl -I http://...` returned 308 |

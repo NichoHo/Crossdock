@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
-import { config, type Role } from "./env";
+import { config, type Role, type WebUser } from "./env";
 
 export const SESSION_COOKIE = "cx_session";
 export const WAREHOUSE_COOKIE = "cx_wh";
@@ -32,15 +32,21 @@ export function decodeSession(token: string | undefined, secret: string, now = D
   }
 }
 
+/**
+ * The cookie proves who signed in, not that they still may. Check the current user list on every
+ * request, so removing a user or changing a role takes effect at once.
+ */
+export function resolveSession(token: string | undefined, secret: string, users: WebUser[], now = Date.now()): Session | null {
+  const s = decodeSession(token, secret, now);
+  if (!s) return null;
+  const u = users.find((x) => x.name === s.user);
+  return u ? { ...s, role: u.role } : null;
+}
+
 export async function getSession(): Promise<Session | null> {
   const jar = await cookies();
   const c = config();
-  const s = decodeSession(jar.get(SESSION_COOKIE)?.value, c.sessionSecret);
-  if (!s) return null;
-  // The cookie proves who signed in, not that they still may. Check the current user list on
-  // every request, so removing a user or changing a role takes effect at once.
-  const u = c.users.find((x) => x.name === s.user);
-  return u ? { ...s, role: u.role } : null;
+  return resolveSession(jar.get(SESSION_COOKIE)?.value, c.sessionSecret, c.users);
 }
 
 export async function startSession(user: string, role: Role) {

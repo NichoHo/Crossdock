@@ -84,6 +84,21 @@ export async function clearAll(): Promise<void> {
   await tx(KV, "readwrite", (s) => s.clear());
 }
 
+/**
+ * Called before signing out: clears the queue, but never drops unsynced work without asking.
+ * Returns false when the person chose to stay signed in.
+ */
+export async function leaveWithQueue(confirm: (message: string) => boolean): Promise<boolean> {
+  try {
+    const pending = (await allCommands()).filter((c) => c.status === "pending").length;
+    if (pending > 0 && !confirm(`${pending} action${pending === 1 ? " has" : "s have"} not synced and will be lost. Sign out anyway?`)) return false;
+    await clearAll();
+  } catch {
+    // IndexedDB can be unavailable (private window); there is then nothing to clear.
+  }
+  return true;
+}
+
 export async function kvGet<T>(k: string): Promise<T | undefined> {
   return tx<T | undefined>(KV, "readonly", (s) => s.get(k));
 }

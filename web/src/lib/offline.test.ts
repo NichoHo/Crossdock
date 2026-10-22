@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
-import { allCommands, applyOptimistic, enqueue, pendingCommands, sync, type Sender } from "./offline";
+import { allCommands, applyOptimistic, enqueue, leaveWithQueue, pendingCommands, sync, type Sender } from "./offline";
 import type { Task } from "./types";
 
 beforeEach(async () => {
@@ -73,5 +73,25 @@ describe("applyOptimistic", () => {
   it("shows pending work as done and leaves the rest alone", () => {
     const out = applyOptimistic([t("a"), t("b")], [{ type: "pick", payload: { task_id: "a" } }]);
     expect(out.map((x) => x.state)).toEqual(["completed", "assigned"]);
+  });
+});
+
+describe("signing out", () => {
+  it("clears the queue", async () => {
+    await enqueue({ wid: "w1", type: "pick", payload: { task_id: "a" }, key: "k1" });
+    expect(await leaveWithQueue(() => true)).toBe(true);
+    expect(await allCommands()).toHaveLength(0);
+  });
+
+  it("asks before dropping unsynced work, and keeps it if the person stays", async () => {
+    await enqueue({ wid: "w1", type: "pick", payload: { task_id: "a" }, key: "k1" });
+    let asked = "";
+    expect(await leaveWithQueue((m) => ((asked = m), false))).toBe(false);
+    expect(asked).toContain("1 action has not synced");
+    expect(await allCommands()).toHaveLength(1);
+  });
+
+  it("does not ask when there is nothing unsynced", async () => {
+    expect(await leaveWithQueue(() => { throw new Error("should not ask"); })).toBe(true);
   });
 });
