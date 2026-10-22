@@ -32,7 +32,7 @@ This page lists each control from the spec (section 17), whether it is in place,
 | Remittance upload: size cap (8 MB), strict CSV parse that names the bad line, whole file refused on any bad row | Phase 4 | Phase 4 tests |
 | Responses are built per endpoint, not copied from database rows | handlers use typed structs | Review |
 | Traces and the Grafana board are not open | Jaeger behind basic auth; Grafana anonymous access off by default | Live: `/jaeger` returns 401 without a password and 200 with it; `/grafana/api/search` returns 401 |
-| Dependency scans in CI | `.github/workflows/ci.yml`, job `dependency-scan` | Run by hand: `govulncheck` found six Go standard library issues, all fixed by moving to Go 1.26.6 (now clean). `npm audit` and `pip-audit` found nothing. The CI job itself has not run. |
+| Dependency scans in CI | `.github/workflows/ci.yml`, job `dependency-scan` | Run by hand: `govulncheck` found six Go standard library issues, all fixed by moving to Go 1.26.10 (now clean). `npm audit` and `pip-audit` found nothing. The CI job itself has not run. |
 | Lockfiles committed | `go.sum`, `web/package-lock.json`; `cmd/slotting/requirements.txt` | Present. The Python file has minimum versions, not exact pins. |
 | Source maps and `.git` not served | Next.js production build; Caddy only proxies to the app | Not tested by request |
 
